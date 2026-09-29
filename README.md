@@ -14,6 +14,21 @@ It runs in any modern browser on desktop or phone, installs as an app (PWA), and
 - **Point your phone at the sky** (📱 button). The view follows your phone's compass and gyroscope and names what's in the crosshair; optionally overlays the live camera.
 - **Night vision** (R) turns everything red to protect dark-adapted eyes outside.
 - **Solar System** view (O): a 3D orrery of the planets, comets and asteroids at the current simulated time.
+- **Play with time.** Drag the jog dial to spin time backwards or forwards (up to a year per second), or step by a minute, hour, day, *sidereal day* (the stars stay put while the planets move), lunar month, year, decade or century. Turn on **motion trails** (X) to watch the Moon and planets trace their paths — including a planet's retrograde loop.
+- **Moments.** Save your birth (or any meaningful moment) with a place search that finds the historical time zone, then view that exact sky, with a plain summary of what was physically there.
+- **Sky School.** Short guided lessons that move the real sky while explaining it, with a glossary of terms.
+
+## As Above — the traditional layer
+
+For those who read meaning in the sky, the **As Above** panel adds the Western astrological and Hermetic Qabalistic traditions, computed from the same real ephemeris and always labelled as tradition rather than measurement:
+
+- **Chart** for now or any saved moment: tropical or sidereal zodiac, Placidus / whole-sign / equal houses, aspects, the planetary hour. The wheel shows the signs *and* the constellations the ecliptic really crosses, so you can see how the symbolic zodiac and the physical sky relate (they differ by about 24° of precession).
+- **Sky notes**: planets entering signs, retrograde and direct stations, New and Full Moons, eclipses and outer-planet aspects — each with its traditional meaning for the world and, from your birth chart, which part of your life it touches.
+- **Journal**: write what actually happened next to each event and look back over months to judge the readings for yourself. Export and back up anytime.
+- **Tree of Life**: the ten sephiroth and twenty-two paths lit by the chart (Golden Dawn or Sefer Yetzirah attributions), the Hebrew letters with their meanings and gematria, and the Emerald Tablet.
+- **Zodiac band** on the sky and a **planetary hour** chip in the clock.
+
+Positions (planets, houses, ascendant, ayanamsa) are verified against JPL Horizons and the Swiss Ephemeris. Moments and journal entries never leave your device.
 
 ### Keyboard
 
