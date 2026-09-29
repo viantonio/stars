@@ -120,7 +120,7 @@ const BODY_FRAG = /* glsl */ `
     float mu = clamp(dot(N, V), 0.0, 1.0);
     if (uMode > 1.5) {
       vec3 ld = vec3(0.35, 0.22, 0.1) + vec3(0.65, 0.78, 0.9) * pow(vec3(mu), vec3(0.4, 0.55, 0.8));
-      gl_FragColor = vec4((vec3(1.0, 0.86, 0.62) * 0.8 + albedo * 0.6) * ld * 1.12, 1.0);
+      gl_FragColor = vec4((vec3(1.0, 0.86, 0.62) * 0.8 + albedo * 0.6) * ld * 1.0, 1.0);
       #include <colorspace_fragment>
       return;
     }
