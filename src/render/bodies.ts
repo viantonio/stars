@@ -115,13 +115,13 @@ const BODY_FRAG = /* glsl */ `
     }
     vec3 c = albedo * lit;
     // Earthshine on the unlit Moon.
-    c += albedo * uEarthshine * smoothstep(0.05, -0.1, dot(Ng, uSunDir));
+    c += albedo * uEarthshine * (1.0 - smoothstep(-0.1, 0.05, dot(Ng, uSunDir)));
 
     // Lunar eclipse shading.
     if (uUmbra > 0.0) {
       float a = acos(clamp(dot(normalize(vPosW), uShadowDir), -1.0, 1.0));
       float pen = clamp((uPenumbra - a) / max(uPenumbra - uUmbra, 1e-5), 0.0, 1.0);
-      float umb = smoothstep(uUmbra + 0.0006, uUmbra - 0.0006, a);
+      float umb = 1.0 - smoothstep(uUmbra - 0.0006, uUmbra + 0.0006, a);
       c *= 1.0 - pen * 0.55;
       // Sunlight refracted through Earth's atmosphere: coppery, brighter near the umbra's edge.
       float edge = clamp(a / uUmbra, 0.0, 1.0);
@@ -404,16 +404,19 @@ export class BodyRenderer {
     const m3 = new THREE.Matrix3().setFromMatrix4(p.eqjToWorld);
     const tmpDir = new THREE.Vector3();
     const orient = new THREE.Matrix4();
+    // Apparent world directions (with refraction) for every body, drawn or not.
+    for (const [id, s] of p.states) {
+      const d = s.dirEqj.clone().applyMatrix3(m3).normalize();
+      if (p.refraction) {
+        const { alt, az } = worldToAltAz(d);
+        altAzToWorld(alt + refraction(alt), az, d);
+      }
+      this.worldDirs.set(id, d);
+    }
     for (const [id, bm] of this.meshes) {
       const s = p.states.get(id);
       if (!s) continue;
-      // Apparent world direction with refraction.
-      tmpDir.copy(s.dirEqj).applyMatrix3(m3).normalize();
-      if (p.refraction) {
-        const { alt, az } = worldToAltAz(tmpDir);
-        altAzToWorld(alt + refraction(alt), az, tmpDir);
-      }
-      this.worldDirs.set(id, tmpDir.clone());
+      tmpDir.copy(this.worldDirs.get(id)!);
       const dist = DIST[id];
       const scale = id === 'Sun' ? 1 : p.scale;
       const r = dist * Math.tan(s.angularRadius * DEG * scale);

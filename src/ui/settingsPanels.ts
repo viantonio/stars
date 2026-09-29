@@ -7,23 +7,23 @@ import { h, icon, type ICONS } from './dom';
 
 type BoolKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
 
+/** Switches that stay in sync with settings changed elsewhere (e.g. keyboard shortcuts). */
 function toggles(app: App, items: [BoolKey, string, keyof typeof ICONS | null, string?][]): HTMLElement {
-  const grid = h('div', { class: 'toggle-grid' });
-  const draw = () => {
+  const buttons = items.map(([key, label, ic, kbd]) => {
+    const b = h('button', { class: 'toggle', onclick: () => app.settings.toggle(key), title: kbd ? `Shortcut: ${kbd}` : undefined }, ic ? icon(ic, 16) : '', label, h('span', { class: 'sw' }));
+    return { key, b };
+  });
+  const sync = () => {
     const s = app.settings.get();
-    grid.replaceChildren(
-      ...items.map(([key, label, ic, kbd]) =>
-        h(
-          'button',
-          { class: `toggle ${s[key] ? 'on' : ''}`, 'aria-pressed': String(s[key]), onclick: () => (app.settings.toggle(key), draw()), title: kbd ? `Shortcut: ${kbd}` : undefined },
-          ic ? icon(ic, 16) : '',
-          label,
-          h('span', { class: 'sw' }),
-        ),
-      ),
-    );
+    for (const { key, b } of buttons) {
+      b.classList.toggle('on', !!s[key]);
+      b.setAttribute('aria-pressed', String(!!s[key]));
+    }
   };
-  draw();
+  sync();
+  const grid = h('div', { class: 'toggle-grid' }, ...buttons.map((x) => x.b));
+  // Stay subscribed only while the panel is on screen.
+  const off = app.settings.onChange(() => (grid.isConnected ? sync() : off()));
   return grid;
 }
 
@@ -39,11 +39,13 @@ function slider(label: string, min: number, max: number, step: number, value: nu
 }
 
 function segmented<T extends string | number>(options: [T, string][], value: T, onChange: (v: T) => void): HTMLElement {
-  const seg = h('div', { class: 'seg' });
-  const draw = (v: T) =>
-    seg.replaceChildren(...options.map(([val, label]) => h('button', { class: val === v ? 'active' : '', onclick: () => (onChange(val), draw(val)) }, label)));
-  draw(value);
-  return seg;
+  const buttons = options.map(([val, label]) => h('button', { onclick: () => (onChange(val), mark(val)) }, label));
+  const mark = (v: T) => buttons.forEach((b, i) => {
+    b.classList.toggle('active', options[i][0] === v);
+    b.setAttribute('aria-pressed', String(options[i][0] === v));
+  });
+  mark(value);
+  return h('div', { class: 'seg' }, ...buttons);
 }
 
 export function renderLayers(app: App): PanelView {
@@ -169,7 +171,7 @@ export function renderLocation(app: App): PanelView {
     app.toasts.show('Finding your location…');
     navigator.geolocation.getCurrentPosition(
       (p) => {
-        app.setLocation('custom', { lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), elevation: Math.max(0, p.coords.altitude ?? 0), name: 'My location' });
+        app.setLocation('custom', { lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), elevation: Math.max(0, p.coords.altitude ?? 0), name: 'My location', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
         draw();
       },
       () => app.toasts.show('Could not get your location'),

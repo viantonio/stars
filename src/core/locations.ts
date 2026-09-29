@@ -55,7 +55,18 @@ export const PRESET_LOCATIONS: SiteLocation[] = [
   },
 ];
 
-export function customLocation(lat: number, lon: number, elevation = 0, name = 'My location'): SiteLocation {
+/** A fixed-offset IANA zone approximating local time from longitude. */
+export function zoneFromLongitude(lon: number): string {
+  const h = Math.round(lon / 15);
+  // Etc/GMT zones have inverted signs: Etc/GMT+8 is UTC−8.
+  return h === 0 ? 'Etc/GMT' : `Etc/GMT${h > 0 ? '-' : '+'}${Math.abs(h)}`;
+}
+
+/**
+ * @param timeZone the site's zone; when omitted (typed-in coordinates) it is
+ * derived from the longitude rather than the device's own zone.
+ */
+export function customLocation(lat: number, lon: number, elevation = 0, name = 'My location', timeZone?: string): SiteLocation {
   return {
     id: 'custom',
     name,
@@ -63,7 +74,7 @@ export function customLocation(lat: number, lon: number, elevation = 0, name = '
     lat,
     lon,
     elevation,
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    timeZone: timeZone ?? zoneFromLongitude(lon),
     bortle: 5,
     horizon: 'flat',
     blurb: 'Custom observing site.',

@@ -20,6 +20,7 @@ export class TimeBar {
   private stripKey = '';
   private stripStart = 0;
   private scrubbing = false;
+  private lastStripDraw = 0;
 
   constructor(private app: App) {
     const t = app.time;
@@ -106,7 +107,7 @@ export class TimeBar {
 
   private scrubTo(clientX: number): void {
     const r = this.strip.getBoundingClientRect();
-    const f = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+    const f = Math.min(0.9999, Math.max(0, (clientX - r.left) / r.width));
     this.app.time.setTime(this.stripStart + f * 86400e3);
   }
 
@@ -131,7 +132,11 @@ export class TimeBar {
     const noon = this.fromLocal(p.date, '12:00')!;
     const start = noon.getTime();
     const key = `${site.id}:${site.lat}:${start}:${this.strip.clientWidth}`;
-    if (key !== this.stripKey) {
+    // Hold the strip still while scrubbing, and redraw at most once a second
+    // when time is racing by days per second.
+    const racing = Math.abs(this.app.time.rate) >= 86400 && performance.now() - this.lastStripDraw < 1000;
+    if (key !== this.stripKey && !this.scrubbing && !racing) {
+      this.lastStripDraw = performance.now();
       this.stripKey = key;
       this.stripStart = start;
       const c = this.stripCanvas;
@@ -142,15 +147,28 @@ export class TimeBar {
       c.height = H * dpr;
       const ctx = c.getContext('2d')!;
       ctx.scale(dpr, dpr);
+      // Sample every 10 minutes and interpolate per pixel.
       const obs = new A.Observer(site.lat, site.lon, site.elevation);
+      const N = 144;
+      const sunAlt = new Float32Array(N + 1);
+      const moonAlt = new Float32Array(N + 1);
+      for (let i = 0; i <= N; i++) {
+        const tm = new Date(start + (i / N) * 86400e3);
+        const s = A.Equator(A.Body.Sun, tm, obs, true, true);
+        sunAlt[i] = A.Horizon(tm, obs, s.ra, s.dec).altitude;
+        const m = A.Equator(A.Body.Moon, tm, obs, true, true);
+        moonAlt[i] = A.Horizon(tm, obs, m.ra, m.dec).altitude;
+      }
+      const lerp = (arr: Float32Array, f: number) => {
+        const i = Math.min(N - 1, Math.floor(f * N));
+        const t = f * N - i;
+        return arr[i] + (arr[i + 1] - arr[i]) * t;
+      };
       for (let x = 0; x < W; x++) {
-        const tm = new Date(start + (x / W) * 86400e3);
-        const eq = A.Equator(A.Body.Sun, tm, obs, true, true);
-        const alt = A.Horizon(tm, obs, eq.ra, eq.dec).altitude;
+        const alt = lerp(sunAlt, x / W);
         ctx.fillStyle = skyColor(alt);
         ctx.fillRect(x, 0, 1, H);
-        const meq = A.Equator(A.Body.Moon, tm, obs, true, true);
-        if (A.Horizon(tm, obs, meq.ra, meq.dec).altitude > 0 && alt < -6) {
+        if (lerp(moonAlt, x / W) > 0 && alt < -6) {
           ctx.fillStyle = 'rgba(220,230,255,0.22)';
           ctx.fillRect(x, H - 4, 1, 4);
         }

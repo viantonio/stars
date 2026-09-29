@@ -156,7 +156,7 @@ function localParts(d: Date, tz: string): { year: number; month: number; day: nu
 }
 
 /** Local noon of the observing day containing `date` (days switch over at local noon). */
-function observingNoon(date: Date, tz: string): Date {
+export function observingNoon(date: Date, tz: string): Date {
   const p = localParts(date, tz);
   const noonAsUtc = Date.UTC(p.year, p.month - 1, p.day - (p.hour < 12 ? 1 : 0), 12);
   const q = localParts(new Date(noonAsUtc), tz);

@@ -2,7 +2,7 @@
 
 export interface Settings {
   locationId: string;
-  custom: { lat: number; lon: number; elevation: number; name: string } | null;
+  custom: { lat: number; lon: number; elevation: number; name: string; timeZone?: string } | null;
   constellationLines: boolean;
   constellationNames: boolean;
   constellationBounds: boolean;

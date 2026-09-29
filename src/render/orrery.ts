@@ -120,7 +120,7 @@ const BODY_FRAG = /* glsl */ `
     float mu = clamp(dot(N, V), 0.0, 1.0);
     if (uMode > 1.5) {
       vec3 ld = vec3(0.35, 0.22, 0.1) + vec3(0.65, 0.78, 0.9) * pow(vec3(mu), vec3(0.4, 0.55, 0.8));
-      gl_FragColor = vec4((0.9 + 0.35 * albedo) * ld * 1.25, 1.0);
+      gl_FragColor = vec4((vec3(1.0, 0.86, 0.62) * 0.8 + albedo * 0.6) * ld * 1.12, 1.0);
       #include <colorspace_fragment>
       return;
     }
@@ -144,7 +144,7 @@ const BODY_FRAG = /* glsl */ `
         }
       }
     }
-    vec3 c = albedo * (lit * 1.45 + 0.028);
+    vec3 c = albedo * (lit * 1.45 + 0.05);
     // Thin atmosphere: a Fresnel rim on the day side.
     float rim = pow(1.0 - mu, 3.0) * smoothstep(-0.25, 0.45, ndl);
     c += uRim.rgb * rim * uRim.a;
@@ -208,7 +208,7 @@ const CORONA_FRAG = /* glsl */ `
     float x = max(r / uCore - 1.0, 0.0);
     float ang = atan(p.y, p.x);
     float rays = 0.8 + 0.2 * sin(ang * 7.0 + 0.6) * sin(ang * 3.0 - 1.1);
-    float g = 0.75 * exp(-x * 2.6 / rays) + 0.22 * exp(-x * 0.55) + 0.05 * (1.0 - r);
+    float g = 0.6 * exp(-x * 3.2 / rays) + 0.1 * exp(-x * 1.4) + 0.012 * (1.0 - r);
     g *= smoothstep(1.0, 0.75, r);
     gl_FragColor = vec4(uColor * g, 1.0);
     #include <colorspace_fragment>
@@ -284,7 +284,7 @@ const TAIL_VERT = /* glsl */ `
     vec3 side = cross(uDir, toCam);
     float sl = length(side);
     side = sl > 1e-5 ? side / sl : vec3(0.0, 1.0, 0.0);
-    p += side * aSide * uWidth * (0.12 + 0.88 * sqrt(aT));
+    p += side * aSide * uWidth * (0.04 + 0.96 * pow(aT, 0.75));
     gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
   }
 `;
@@ -295,8 +295,8 @@ const TAIL_FRAG = /* glsl */ `
   varying float vT;
   varying float vSide;
   void main() {
-    float along = pow(1.0 - vT, 1.6) * smoothstep(0.0, 0.04, vT);
-    float across = 1.0 - vSide * vSide;
+    float along = pow(1.0 - vT, 1.7) * (0.35 + 0.65 * smoothstep(0.0, 0.12, vT));
+    float across = pow(1.0 - vSide * vSide, 1.5);
     gl_FragColor = vec4(uColor * along * across * uIntensity, 1.0);
     #include <colorspace_fragment>
   }
@@ -423,7 +423,7 @@ export class Orrery {
 
   private readonly sphere = new THREE.SphereGeometry(1, 64, 40);
   private readonly tailGeometry: THREE.BufferGeometry;
-  private readonly ringTex = makeSaturnRingTexture();
+  private readonly ringTex = Orrery.ringTexture();
   private earthTex: THREE.Texture | null = null;
 
   private readonly planets: PlanetObj[] = [];
@@ -462,6 +462,15 @@ export class Orrery {
   private width = 1;
   private height = 1;
   private pointerDown: { x: number; y: number; t: number } | null = null;
+
+  /** Saturn's ring profile, mipmapped: the orrery sees the rings strongly minified. */
+  private static ringTexture(): THREE.DataTexture {
+    const t = makeSaturnRingTexture();
+    t.generateMipmaps = true;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.needsUpdate = true;
+    return t;
+  }
 
   constructor(container: HTMLElement, private readonly textures: Record<string, THREE.Texture>) {
     this.root = document.createElement('div');
@@ -506,7 +515,7 @@ export class Orrery {
         uniforms: {
           uMap: { value: mw },
           uToEqj: { value: DISPLAY_TO_EQJ },
-          uGain: { value: mw ? 0.55 : 0 },
+          uGain: { value: mw ? 0.14 : 0 },
         },
         side: THREE.BackSide,
         depthWrite: false,
@@ -760,13 +769,14 @@ export class Orrery {
     let dist = opts.distance;
     let dir: THREE.Vector3;
     if (bodyId === 'Sun') {
-      dist ??= 14;
+      dist ??= this.fitDistance(5);
       const az = Math.atan2(offset.z, offset.x);
       const el = opts.elevation ?? 0.5;
       dir = new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
     } else {
       const ringed = bodyId === 'Saturn';
-      dist ??= Math.max(radius * (ringed ? 9 : 6.5), 1.1);
+      const s = this.small.get(bodyId);
+      dist ??= this.fitDistance(s ? (s.el.kind === 'comet' ? 2.2 : 0.9) : Math.max(ringed ? radius * 2.33 * 1.45 : radius * 2.4, 0.4));
       // Look from a little off the sunward side so the body shows a gibbous, lit face.
       const sunward = tmpV.copy(pos).negate().setY(0);
       if (sunward.lengthSq() < 1e-9) sunward.set(1, 0, 0);
@@ -787,17 +797,16 @@ export class Orrery {
   }
 
   private applyPreset(p: Preset, duration = 1600): void {
-    const aspectBoost = this.aspectBoost();
-    if (p === 'inner') this.focus('Sun', { distance: 44 * aspectBoost, elevation: 0.6, duration });
-    else this.focus('Sun', { distance: 175 * aspectBoost, elevation: 0.72, duration });
+    if (p === 'inner') this.focus('Sun', { distance: this.fitDistance(16), elevation: 0.6, duration });
+    else this.focus('Sun', { distance: this.fitDistance(58), elevation: 0.72, duration });
     this.preset = p;
     this.panel.setActive(this.focusId, this.preset);
   }
 
-  /** Pull back on tall portrait screens so presets still frame the orbits. */
-  private aspectBoost(): number {
-    const aspect = this.width / this.height;
-    return aspect < 1.2 ? Math.min(2.4, Math.pow(1.2 / aspect, 0.85)) : 1;
+  /** Camera distance at which a sphere of `radius` around the target fills the view comfortably. */
+  private fitDistance(radius: number): number {
+    const tanV = Math.tan((this.camera.fov * Math.PI) / 360);
+    return radius / Math.min(tanV, tanV * (this.width / this.height));
   }
 
   update(time: Date, smallBodies: SmallBodyElements[]): void {
@@ -866,7 +875,7 @@ export class Orrery {
     if (!this.initialized) {
       this.initialized = true;
       const az = Math.atan2(earth.pos.z, earth.pos.x) - 0.9;
-      const d = 44 * this.aspectBoost();
+      const d = this.fitDistance(16);
       const el = 0.6;
       this.controls.target.set(0, 0, 0);
       this.camera.position.set(Math.cos(el) * Math.cos(az) * d, Math.sin(el) * d, Math.cos(el) * Math.sin(az) * d);
@@ -989,9 +998,12 @@ export class Orrery {
     const want = new Map<string, { el: SmallBodyElements; tail: number; mag: number }>();
     if (this.showComets) {
       const comets = list.filter((e) => e.kind === 'comet');
-      const bright = brightComets(comets, t, SACRAMENTO, 12)
-        // Drop sungrazer fragments whose magnitudes are unreliable.
-        .filter((x) => !(x.state.r < 0.1 && x.state.mag < 2))
+      // Everything brighter than ~12 (as seen from Sacramento); when the sky is poor in
+      // comets, top up with the few brightest so there is always something to explore.
+      const bright = brightComets(comets, t, SACRAMENTO, 15.5)
+        // Drop SOHO sungrazers and fragments, whose magnitudes are unreliable.
+        .filter((x) => !/SOHO|\/\d{4} [A-Z]\d+-[A-Z]/.test(x.el.name))
+        .filter((x, i) => x.state.mag <= 12 || i < 4)
         .slice(0, 14);
       for (const b of bright) want.set(b.el.id, { el: b.el, tail: b.state.tailLengthAU, mag: b.state.mag });
     }
@@ -1035,7 +1047,7 @@ export class Orrery {
         new THREE.LineBasicMaterial({
           color: isComet ? 0x7fe8d0 : 0xb8b0a4,
           transparent: true,
-          opacity: isComet ? 0.28 : 0.12,
+          opacity: isComet ? 0.17 : 0.07,
           depthWrite: false,
           blending: THREE.AdditiveBlending,
         }),
@@ -1107,7 +1119,7 @@ export class Orrery {
       iu.uHead.value.copy(s.pos);
       iu.uDir.value.copy(anti);
       iu.uLen.value = len;
-      iu.uWidth.value = 0.05 + len * 0.05;
+      iu.uWidth.value = 0.03 + len * 0.035;
       iu.uIntensity.value = intensity * 0.9;
       // Dust tail curves back along the orbit: between anti-sunward and trailing the motion.
       eqjToDisplay(helioPosition(s.el, later), vel).sub(eqjToDisplay(h, tmpV2)).normalize();
@@ -1115,7 +1127,7 @@ export class Orrery {
       du.uHead.value.copy(s.pos);
       du.uDir.value.copy(anti).addScaledVector(vel, -0.45).normalize();
       du.uLen.value = len * 0.7;
-      du.uWidth.value = 0.08 + len * 0.12;
+      du.uWidth.value = 0.05 + len * 0.1;
       du.uIntensity.value = intensity * 0.55;
     }
   }
@@ -1184,6 +1196,10 @@ export class Orrery {
     this.renderer.domElement.style.height = `${h}px`;
     this.camera.aspect = w / h;
     this.camera.fov = w / h < 0.9 ? 55 : 40;
+    // Centre the scene in the space the UI leaves free: left of the panel on
+    // desktop, above the bottom controls on phones.
+    if (w <= 760) this.camera.setViewOffset(w, h, 0, Math.round(h * 0.07), w, h);
+    else this.camera.setViewOffset(w, h, 110, 0, w, h);
     this.camera.updateProjectionMatrix();
     (this.markers.material as THREE.ShaderMaterial).uniforms.uDpr.value = this.renderer.getPixelRatio();
   };
@@ -1262,12 +1278,17 @@ export class Orrery {
       if (!s) return;
       const active = id !== undefined && id === this.focusId && !this.preset;
       cands.push({ label, x: s.x + Math.max(s.r, 3) + 6, y: s.y, pri: active ? 1000 : pri, active });
+      return s;
     };
     add(this.sunLabel, new THREE.Vector3(), SUN_RADIUS * 1.15, 200, 'Sun');
-    this.planets.forEach((p, i) => add(p.label, p.pos, p.ring ? p.radius * 2.2 : p.radius, 150 - i, p.def.id));
+    this.planets.forEach((p, i) => add(p.label, p.pos, p.ring ? p.radius * 2.2 : p.radius, p.def.id === 'Earth' ? 160 : 150 - i, p.def.id));
     const earth = this.planet('Earth')!;
     if (this.camera.position.distanceTo(earth.pos) < 10) add(this.moonLabel, this.moonPos, MOON_RADIUS, 120, 'Moon');
-    for (const s of this.small.values()) add(s.label, s.pos, 0.05, s.el.kind === 'comet' ? 80 - s.mag : 40 - s.el.H, s.el.id);
+    for (const s of this.small.values()) {
+      // Only the big four asteroids are labelled from afar; the rest when the camera is near.
+      if (s.el.kind === 'asteroid' && s.el.H > 5.5 && this.camera.position.distanceTo(s.pos) > 12 && s.el.id !== this.focusId) continue;
+      add(s.label, s.pos, 0.05, s.el.kind === 'comet' ? 80 - s.mag : 40 - s.el.H, s.el.id);
+    }
     // AU rings: label each where it passes closest to the camera.
     const cam = this.camera.position;
     const az = Math.atan2(cam.z, cam.x);
@@ -1293,7 +1314,7 @@ export class Orrery {
       const x0 = c.x;
       const y0 = c.y - l.h / 2;
       const r: [number, number, number, number] = [x0 - 2, y0 - 1, x0 + l.w + 2, y0 + l.h + 1];
-      if (r[2] < 0 || r[0] > this.width || r[3] < 0 || r[1] > this.height) continue;
+      if (r[0] < 0 || r[2] > this.width || r[1] < 0 || r[3] > this.height) continue;
       if (placed.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1])) continue;
       placed.push(r);
       used.add(l);
@@ -1356,7 +1377,7 @@ export class Orrery {
       const min = (au * 499.004784) / 60;
       return min < 60 ? `${min.toFixed(1)} light-min` : `${(min / 60).toFixed(2)} light-h`;
     };
-    if (this.preset) text = this.preset === 'inner' ? 'Mercury to Mars, with the asteroid belt beyond' : 'The giant planets and Pluto';
+    if (this.preset) text = this.preset === 'inner' ? 'Mercury to Mars and the main asteroid belt' : 'The giant planets and Pluto';
     else if (id === 'Sun') text = `${earth.helio.length().toFixed(3)} AU from Earth · ${lt(earth.helio.length())}`;
     else if (id === 'Earth') text = `${earth.helio.length().toFixed(3)} AU from the Sun`;
     else if (id === 'Moon') {

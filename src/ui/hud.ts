@@ -66,7 +66,7 @@ export class Hud {
     this.statusEl.style.display = showChips ? '' : 'none';
     this.readout.style.display = showChips ? '' : 'none';
     const v = f.view;
-    this.needle.style.transform = `rotate(${-v.az + 45}deg)`;
+    this.needle.style.transform = `rotate(${-v.az - 45}deg)`;
     const fovText = v.fov >= 10 ? `${v.fov.toFixed(0)}°` : v.fov >= 1 ? `${v.fov.toFixed(1)}°` : `${(v.fov * 60).toFixed(0)}′`;
     const mag = Math.max(1, 60 / v.fov);
     this.readout.replaceChildren(

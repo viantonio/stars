@@ -6,7 +6,12 @@ import { h, icon, fmtTime, compass16 } from './dom';
 
 /** The details card for the selected object, refreshed live. */
 export class InfoCard {
-  private el = h('aside', { class: 'info glass', 'aria-live': 'polite', 'aria-hidden': 'true' });
+  private el = h('aside', { class: 'info glass', 'aria-label': 'Object details', 'aria-hidden': 'true' });
+  private headEl: HTMLElement | null = null;
+  private bodyEl: HTMLElement | null = null;
+  private actionsEl: HTMLElement | null = null;
+  private lastMove = 0;
+  private lastTracking = false;
   private obj: SkyObject | null = null;
   private lastKey = '';
   private lastRefresh = 0;
@@ -44,7 +49,12 @@ export class InfoCard {
   }
 
   onUserMove(): void {
-    if (this.obj) this.render();
+    // Altitude/azimuth rows follow the view, but not on every pointer event.
+    const now = performance.now();
+    if (this.obj && now - this.lastMove > 300) {
+      this.lastMove = now;
+      this.dirty = true;
+    }
   }
 
   private render(): void {
@@ -55,13 +65,32 @@ export class InfoCard {
     const info = describe(o, this.app.view, this.app.catalogs);
     if (!info) return;
     const key = objectKey(o);
-    const scrollTop = key === this.lastKey ? this.el.querySelector('.info-body')?.scrollTop ?? 0 : 0;
-    this.lastKey = key;
-    this.el.style.setProperty('--accent', info.accent);
-    this.el.style.setProperty('--accent-glow', `${info.accent}33`);
-    this.el.replaceChildren(this.head(info), this.body(info), this.actions(info));
-    const b = this.el.querySelector('.info-body');
-    if (b) b.scrollTop = scrollTop;
+    const tracking = this.app.tracking;
+    if (key !== this.lastKey || !this.headEl) {
+      // New object: rebuild the whole card.
+      this.lastKey = key;
+      this.el.style.setProperty('--accent', info.accent);
+      this.el.style.setProperty('--accent-glow', `${info.accent}33`);
+      this.headEl = this.head(info);
+      this.bodyEl = this.body(info);
+      this.actionsEl = this.actions(info);
+      this.lastTracking = tracking;
+      this.el.replaceChildren(this.headEl, this.bodyEl, this.actionsEl);
+      return;
+    }
+    // Same object: refresh the live values in place, keeping scroll and focus.
+    const fresh = this.body(info);
+    const scrollTop = this.bodyEl!.scrollTop;
+    this.bodyEl!.replaceChildren(...fresh.childNodes);
+    this.bodyEl!.scrollTop = scrollTop;
+    if (tracking !== this.lastTracking) {
+      this.lastTracking = tracking;
+      const focused = document.activeElement && this.actionsEl!.contains(document.activeElement) ? [...this.actionsEl!.children].indexOf(document.activeElement) : -1;
+      const next = this.actions(info);
+      this.actionsEl!.replaceWith(next);
+      this.actionsEl = next;
+      if (focused >= 0) (next.children[focused] as HTMLElement | undefined)?.focus();
+    }
   }
 
   private head(info: ObjectInfo): HTMLElement {
@@ -98,7 +127,7 @@ export class InfoCard {
     return h(
       'div',
       { class: 'info-body' },
-      info.status ? h('div', { class: 'info-status' }, h('span', { class: `chip ${info.status.tone === 'good' ? 'good' : info.status.tone === 'warn' ? 'warn' : ''}` }, info.status.text)) : '',
+      info.status ? h('div', { class: 'info-status', role: 'status' }, h('span', { class: `chip ${info.status.tone === 'good' ? 'good' : info.status.tone === 'warn' ? 'warn' : ''}` }, info.status.text)) : '',
       info.description ? h('p', { class: 'info-desc' }, info.description) : '',
       rows,
       passes,
@@ -120,7 +149,7 @@ export class InfoCard {
           onclick: () => {
             this.app.track(tracking ? null : o);
             if (!tracking) this.app.flyTo(o);
-            this.render();
+            this.dirty = true;
           },
         },
         icon('track', 16),

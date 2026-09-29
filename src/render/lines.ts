@@ -53,6 +53,8 @@ export class SkyLines {
           'vec4 end = viewMatrix * vec4( skyPoint(instanceEnd), 1.0 );',
         );
     };
+    // Distinct programs for refracted and unrefracted sets (they share onBeforeCompile's source).
+    this.material.customProgramCacheKey = () => (refract ? 'sky-lines-r' : 'sky-lines-n');
     this.object = new LineSegments2(geom, this.material);
     if (opts.dashed) this.object.computeLineDistances();
     this.object.frustumCulled = false;

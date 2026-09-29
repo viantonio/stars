@@ -51,8 +51,11 @@ function riseSet(body: A.Body, observer: A.Observer, start: A.AstroTime) {
 /** Rise/transit/set rows for a fixed point (stars, DSOs) or a body. */
 function timingRows(body: A.Body, observer: A.Observer, time: A.AstroTime, tz: string, decDeg?: number, lat?: number): InfoRow[] {
   if (decDeg !== undefined && lat !== undefined) {
-    if (decDeg > 90 - lat) return [{ label: 'Visibility', value: 'Circumpolar — never sets' }];
-    if (decDeg < lat - 90) return [{ label: 'Visibility', value: 'Never rises from here' }];
+    // Mirror the test for the southern hemisphere.
+    const d = lat >= 0 ? decDeg : -decDeg;
+    const a = Math.abs(lat);
+    if (d > 90 - a) return [{ label: 'Visibility', value: 'Circumpolar — never sets' }];
+    if (d < a - 90) return [{ label: 'Visibility', value: 'Never rises from here' }];
   }
   const start = time.AddDays(-0.5);
   const r = riseSet(body, observer, start);

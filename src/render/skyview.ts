@@ -97,6 +97,9 @@ export class SkyView {
   private selected: SkyObject | null = null;
   private hovered: SkyObject | null = null;
   private selectionPath: [number, number][] | null = null;
+  private selectionPathKey = '';
+  /** Recomputes the selection path when the site or time bucket changes. */
+  selectionPathProvider: (() => [number, number][] | null) | null = null;
   frame: FrameInfo | null = null;
   private width = 1;
   private height = 1;
@@ -248,10 +251,13 @@ export class SkyView {
   select(o: SkyObject | null): void {
     this.selected = o;
     this.selectionPath = null;
+    this.selectionPathProvider = null;
   }
 
-  setSelectionPath(path: [number, number][] | null): void {
-    this.selectionPath = path;
+  setSelectionPath(provider: (() => [number, number][] | null) | null): void {
+    this.selectionPathProvider = provider;
+    this.selectionPathKey = '';
+    this.selectionPath = null;
   }
 
   get selection(): SkyObject | null {
@@ -848,6 +854,13 @@ export class SkyView {
     }
 
     // Selection path (e.g. a satellite's track) and reticle.
+    if (this.selectionPathProvider) {
+      const key = `${f.site.id}:${f.site.lat}:${f.site.lon}:${Math.floor(f.time.getTime() / 60e3)}`;
+      if (key !== this.selectionPathKey) {
+        this.selectionPathKey = key;
+        this.selectionPath = this.selectionPathProvider();
+      }
+    }
     if (this.selectionPath) {
       const pts: [number, number][] = [];
       for (const [alt, az] of this.selectionPath) {

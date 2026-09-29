@@ -44,9 +44,14 @@ export class LookControls {
     el.addEventListener('wheel', this.onWheel, { passive: false });
     window.addEventListener('keydown', (e) => {
       if ((e.target as HTMLElement)?.closest?.('input, textarea, select')) return;
-      this.keys.add(e.key);
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      this.keys.add(e.code);
     });
-    window.addEventListener('keyup', (e) => this.keys.delete(e.key));
+    window.addEventListener('keyup', (e) => {
+      // macOS sends no keyup for keys released while Cmd is held.
+      if (e.key === 'Meta') this.keys.clear();
+      this.keys.delete(e.code);
+    });
     window.addEventListener('blur', () => this.keys.clear());
   }
 
@@ -176,12 +181,12 @@ export class LookControls {
     // Keyboard.
     const k = this.keys;
     const rate = this.fov * 0.9 * dt;
-    if (k.has('ArrowLeft') || k.has('a')) (this.az -= rate / Math.max(0.2, Math.cos((this.alt * Math.PI) / 180))), (this.trackTarget = null);
-    if (k.has('ArrowRight') || k.has('d')) (this.az += rate / Math.max(0.2, Math.cos((this.alt * Math.PI) / 180))), (this.trackTarget = null);
-    if (k.has('ArrowUp') || k.has('w')) (this.alt = Math.min(89.9, this.alt + rate)), (this.trackTarget = null);
-    if (k.has('ArrowDown') || k.has('s')) (this.alt = Math.max(-89.9, this.alt - rate)), (this.trackTarget = null);
-    if (k.has('PageUp') || k.has('=') || k.has('+')) this.zoomBy(Math.exp(-1.2 * dt));
-    if (k.has('PageDown') || k.has('-') || k.has('_')) this.zoomBy(Math.exp(1.2 * dt));
+    if (k.has('ArrowLeft') || k.has('KeyA')) (this.az -= rate / Math.max(0.2, Math.cos((this.alt * Math.PI) / 180))), (this.trackTarget = null);
+    if (k.has('ArrowRight') || k.has('KeyD')) (this.az += rate / Math.max(0.2, Math.cos((this.alt * Math.PI) / 180))), (this.trackTarget = null);
+    if (k.has('ArrowUp') || k.has('KeyW')) (this.alt = Math.min(89.9, this.alt + rate)), (this.trackTarget = null);
+    if (k.has('ArrowDown') || k.has('KeyS')) (this.alt = Math.max(-89.9, this.alt - rate)), (this.trackTarget = null);
+    if (k.has('PageUp') || k.has('Equal') || k.has('NumpadAdd')) this.zoomBy(Math.exp(-1.2 * dt));
+    if (k.has('PageDown') || k.has('Minus') || k.has('NumpadSubtract')) this.zoomBy(Math.exp(1.2 * dt));
 
     if (this.flight) {
       const f = this.flight;

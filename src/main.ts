@@ -57,6 +57,10 @@ function webglAvailable(): boolean {
 }
 
 async function boot(): Promise<void> {
+  // Register first so the install step can precache everything for offline use.
+  if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => undefined);
+  }
   if (!webglAvailable()) {
     text.textContent = 'Your browser does not support WebGL, which is needed to render the sky.';
     return;
@@ -73,9 +77,6 @@ async function boot(): Promise<void> {
       setTimeout(() => el.remove(), 900);
     }),
   );
-  if ('serviceWorker' in navigator && import.meta.env.PROD) {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => undefined);
-  }
 }
 
 boot().catch((e) => {

@@ -1,9 +1,37 @@
-// Offline support: cache the app shell and bundled data on first use.
-// Navigations are network-first (so updates arrive); assets are served from
-// the cache and refreshed in the background.
-const CACHE = 'stars-v1';
+// Offline support. On install, precache the app shell (including the hashed
+// JS/CSS it references) plus the bundled catalogues and textures, so the
+// observatory works offline after the first visit. Navigations are
+// network-first; other assets are served from the cache and refreshed in the
+// background.
+const CACHE = 'stars-v2';
 
-self.addEventListener('install', () => self.skipWaiting());
+const DATA = [
+  'data/stars.bin', 'data/stars-meta.json', 'data/constellations.json', 'data/dso.json',
+  'data/milkyway-outline.json', 'data/CometEls.txt', 'data/asteroids.json', 'data/satellites.tle',
+];
+const TEXTURES = ['milkyway', 'moon', 'moon_normal', 'sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'].map(
+  (t) => `tex/${t}.jpg`,
+);
+const SHELL = ['./', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE);
+      await cache.addAll([...SHELL, ...DATA, ...TEXTURES]).catch(() => undefined);
+      // Also cache the hashed bundles referenced by the page.
+      try {
+        const html = await (await fetch('./', { cache: 'no-cache' })).text();
+        const assets = [...html.matchAll(/(?:src|href)="\.?\/?(assets\/[^"]+)"/g)].map((m) => m[1]);
+        await cache.addAll(assets);
+      } catch {
+        /* offline during install: the runtime cache fills in later */
+      }
+      await self.skipWaiting();
+    })(),
+  );
+});
+
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches
@@ -21,15 +49,17 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put('./', copy));
+          }
           return res;
         })
-        .catch(() => caches.match(req).then((r) => r || caches.match('./'))),
+        .catch(() => caches.match('./').then((r) => r || Response.error())),
     );
     return;
   }
-  // Stale-while-revalidate: instant from cache, refreshed in the background.
+  // Stale-while-revalidate.
   e.respondWith(
     caches.open(CACHE).then((cache) =>
       cache.match(req).then((hit) => {

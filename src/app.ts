@@ -9,7 +9,7 @@ import type { Catalogs } from './data/catalog';
 import { loadJSON, loadText } from './data/catalog';
 import { parseCometEls, parseAsteroids, type SmallBodyElements } from './astro/smallbodies';
 import { parseTLE, mergeTLE } from './astro/satellites';
-import { computeEvents, tonightSummary, type SkyEvent, type Tonight } from './astro/events';
+import { computeEvents, tonightSummary, observingNoon, type SkyEvent, type Tonight } from './astro/events';
 import { satellitePath } from './core/describe';
 import { Hud } from './ui/hud';
 import { TimeBar } from './ui/timebar';
@@ -90,7 +90,7 @@ export class App {
 
   private resolveSite(): SiteLocation {
     const s = this.settings.get();
-    if (s.locationId === 'custom' && s.custom) return customLocation(s.custom.lat, s.custom.lon, s.custom.elevation, s.custom.name);
+    if (s.locationId === 'custom' && s.custom) return customLocation(s.custom.lat, s.custom.lon, s.custom.elevation, s.custom.name, s.custom.timeZone);
     return PRESET_LOCATIONS.find((l) => l.id === s.locationId) ?? PRESET_LOCATIONS[0];
   }
 
@@ -98,7 +98,7 @@ export class App {
     return this.site;
   }
 
-  setLocation(id: string, custom?: { lat: number; lon: number; elevation: number; name: string }): void {
+  setLocation(id: string, custom?: { lat: number; lon: number; elevation: number; name: string; timeZone?: string }): void {
     this.settings.set({ locationId: id, custom: custom ?? this.settings.get().custom });
     this.toasts.show(`Observing from ${this.resolveSite().name}`);
   }
@@ -164,7 +164,10 @@ export class App {
   toggleOrrery(): void {
     if (this.orrery) {
       if (this.orrery.visible) this.orrery.hide();
-      else this.orrery.show();
+      else {
+        this.info.close();
+        this.orrery.show();
+      }
       return;
     }
     if (this.orreryLoading) return;
@@ -188,7 +191,7 @@ export class App {
     this.view.controls.trackTarget = null;
     if (o) {
       this.info.open(o);
-      if (o.kind === 'satellite') this.view.setSelectionPath(satellitePath(this.view, o.noradId));
+      if (o.kind === 'satellite') this.view.setSelectionPath(() => satellitePath(this.view, o.noradId));
       if (opts.fly) this.flyTo(o, opts.fov);
     } else this.info.close();
   }
@@ -213,7 +216,7 @@ export class App {
     const f = this.frame;
     const t = f?.time ?? new Date();
     // Key on the local calendar day (the summary is for "the coming night").
-    const key = `${this.site.id}:${this.site.lat}:${new Date(t.getTime() - 12 * 3600e3).toISOString().slice(0, 10)}`;
+    const key = `${this.site.id}:${this.site.lat}:${this.site.lon}:${observingNoon(t, this.site.timeZone).getTime()}`;
     if (!this.tonightCache || this.tonightCache.key !== key) this.tonightCache = { key, value: tonightSummary(this.site, t) };
     return this.tonightCache.value;
   }
@@ -278,6 +281,9 @@ export class App {
         if (e.key === 'Escape') target.blur();
         return;
       }
+      // Dialogs handle their own keys; Space/Enter on a button must activate it.
+      if (document.querySelector('.modal-backdrop')) return;
+      if ((e.key === ' ' || e.key === 'Enter') && target.closest('button, [role="button"], a')) return;
       if (e.metaKey || e.ctrlKey || e.altKey) {
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
           e.preventDefault();

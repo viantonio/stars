@@ -263,6 +263,7 @@ export class Atmosphere {
   private lastSun = new THREE.Vector3(0, -2, 0);
   private lastMoon = new THREE.Vector3(0, -2, 0);
   private lastKey = '';
+  private lastBake = 0;
   readonly material: THREE.ShaderMaterial;
 
   constructor(milkyWay: THREE.Texture) {
@@ -336,16 +337,21 @@ export class Atmosphere {
     u.uObserverKm.value = p.observerKm;
     u.uTurbidity.value = p.turbidity;
     const prevTarget = renderer.getRenderTarget();
+    // At high time rates the Sun moves every frame; cap re-bakes at ~20 Hz.
+    const now = performance.now();
+    const canBake = force || now - this.lastBake > 50;
     // The dome normalises by the zenith value, so any per-bake scale cancels out.
     const scaleFor = (dir: THREE.Vector3) => Math.pow(10, Math.max(0, -Math.asin(dir.y) * 57.2958) * 0.35 + 1);
-    if (p.sunFlux > 1e-6 && (force || p.sunDir.angleTo(this.lastSun) > 0.0004)) {
+    if (canBake && p.sunFlux > 1e-6 && (force || p.sunDir.angleTo(this.lastSun) > 0.0004)) {
+      this.lastBake = now;
       u.uLightDir.value.copy(p.sunDir);
       u.uScale.value = scaleFor(p.sunDir);
       renderer.setRenderTarget(this.sunTarget);
       renderer.render(this.lutScene, this.lutCamera);
       this.lastSun.copy(p.sunDir);
     }
-    if (p.moonFlux > 1e-6 && (force || p.moonDir.angleTo(this.lastMoon) > 0.002)) {
+    if (canBake && p.moonFlux > 1e-6 && (force || p.moonDir.angleTo(this.lastMoon) > 0.002)) {
+      this.lastBake = now;
       u.uLightDir.value.copy(p.moonDir);
       u.uScale.value = scaleFor(p.moonDir);
       renderer.setRenderTarget(this.moonTarget);
