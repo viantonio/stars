@@ -468,7 +468,7 @@ export class App {
     if (on) {
       this.panels.close();
       this.select(null);
-      this.toasts.show('Stargazing — only the stars. Press Esc or tap ✦ to return.', 3500);
+      this.toasts.show('Stargazing — only the stars. Constellations stay switchable on the right; Esc to return.', 4000);
     }
   }
 }

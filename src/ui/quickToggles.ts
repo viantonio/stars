@@ -22,7 +22,7 @@ export class QuickToggles {
     for (const [key, ic, label, kbd] of ITEMS) {
       const b = h(
         'button',
-        { class: 'qt', 'aria-label': label, onclick: () => this.toggle(key) },
+        { class: `qt ${key === 'constellationLines' || key === 'constellationNames' ? 'qt-stargaze' : ''}`, 'aria-label': label, onclick: () => this.toggle(key) },
         icon(ic, 19),
         h('span', { class: 'kbd-hint' }, label, kbd ? h('kbd', {}, kbd) : ''),
       );

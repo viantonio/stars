@@ -2048,7 +2048,6 @@ body.stargaze .toolbar,
 body.stargaze .timebar,
 body.stargaze .readout,
 body.stargaze .zoom-buttons,
-body.stargaze .quick-toggles,
 body.stargaze .info,
 body.stargaze .panel,
 body.stargaze .moment-banner {
@@ -2086,4 +2085,20 @@ body.stargaze .stargaze-exit:focus-visible {
 .card.is-me {
   border-color: rgba(255, 207, 122, 0.45);
   background: rgba(255, 207, 122, 0.07);
+}
+
+/* While stargazing only the constellation switches stay, softly. */
+body.stargaze .quick-toggles {
+  opacity: 0.55;
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+body.stargaze .quick-toggles:hover {
+  opacity: 1;
+}
+
+body.stargaze .qt:not(.qt-stargaze) {
+  display: none;
 }

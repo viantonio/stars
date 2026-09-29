@@ -462,7 +462,8 @@ export class SkyView {
     const fov = this.controls.fov;
     const zoomGain = THREE.MathUtils.clamp(2.3 * Math.log10(50 / fov), 0, 6.5);
     const limitingMag = Math.min(skyLimit + zoomGain + settings.starBoost, 14);
-    const daylight = THREE.MathUtils.smoothstep(sunFlux, magToFlux(12), magToFlux(6));
+    // How bright the visible sky is: with the atmosphere off there is no daylight to fade things against.
+    const daylight = settings.atmosphere ? THREE.MathUtils.smoothstep(sunFlux, magToFlux(12), magToFlux(6)) : 0;
     const skyDisplay = displayFromFlux(total);
 
     // ---- Atmosphere & Milky Way
@@ -599,7 +600,7 @@ export class SkyView {
 
     // ---- Layer visibility.
     this.constellationLines.object.visible = settings.constellationLines;
-    this.constellationLines.material.opacity = 0.42 * (1 - daylight * 0.8);
+    this.constellationLines.material.opacity = 0.5 * (1 - daylight * 0.75);
     this.constellationBounds.object.visible = settings.constellationBounds;
     this.gridAltAz.object.visible = settings.gridAltAz;
     this.gridEq.object.visible = settings.gridEquatorial;
@@ -1114,11 +1115,13 @@ export function shortCometName(name: string): string {
 }
 
 /**
- * Stargaze: every source of light and every overlay removed — no sunlight,
- * moonlight or city glow, no labels or lines — so only the stars remain,
- * shining as they would from the darkest place on Earth.
+ * Stargaze: every source of light removed — no sunlight, moonlight or city
+ * glow, no labels or guides — so the stars shine as they would from the
+ * darkest place on Earth. Constellation figures and names remain the
+ * user's choice.
  */
 function stargazeSettings(s: Readonly<Settings>): Settings {
+  // Constellation figures and names stay as the user sets them (quick toggles).
   return {
     ...s,
     atmosphere: false,
@@ -1127,9 +1130,6 @@ function stargazeSettings(s: Readonly<Settings>): Settings {
     milkyWay: true,
     twinkle: true,
     starBoost: Math.max(s.starBoost, 0.8),
-    constellationLines: false,
-    constellationNames: false,
-    constellationBounds: false,
     starNames: false,
     planetLabels: false,
     deepSky: false,
