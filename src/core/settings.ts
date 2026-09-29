@@ -35,6 +35,17 @@ export interface Settings {
   /** Show labels for objects even when they are too faint to see. */
   labelFaint: boolean;
   showHud: boolean;
+  /** Step size for the time bar's step buttons (see STEP_UNITS). */
+  stepUnit: string;
+  /** Draw the paths of the Sun, Moon and planets as time moves. */
+  trails: boolean;
+  /** "As Above" layer: the symbolic zodiac band on the sky and the planetary hour. */
+  zodiacBand: boolean;
+  planetaryHour: boolean;
+  zodiac: 'tropical' | 'sidereal';
+  ayanamsa: 'lahiri' | 'fagan-bradley';
+  houseSystem: 'placidus' | 'whole-sign' | 'equal';
+  letterTradition: 'golden-dawn' | 'sefer-yetzirah';
   onboarded: boolean;
 }
 
@@ -69,6 +80,14 @@ export const DEFAULT_SETTINGS: Settings = {
   twinkle: true,
   labelFaint: false,
   showHud: true,
+  stepUnit: 'hour',
+  trails: false,
+  zodiacBand: false,
+  planetaryHour: true,
+  zodiac: 'tropical',
+  ayanamsa: 'lahiri',
+  houseSystem: 'placidus',
+  letterTradition: 'golden-dawn',
   onboarded: false,
 };
 

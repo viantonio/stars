@@ -67,7 +67,9 @@ export function renderLayers(app: App): PanelView {
       ['asteroids', 'Asteroids', null],
       ['satellites', 'Satellites', 'satellite'],
       ['meteors', 'Meteors', 'meteor'],
+      ['trails', 'Motion trails', 'orbit', 'X'],
     ]),
+    h('p', { class: 'note' }, 'Motion trails draw the paths of the Sun, Moon and planets against the stars as you move time. Step by sidereal days or spin the time dial to watch a planet loop backwards during retrograde.'),
     h('div', { class: 'section-title' }, 'Sky & scenery'),
     toggles(app, [
       ['milkyWay', 'Milky Way', null, 'M'],
@@ -77,7 +79,7 @@ export function renderLayers(app: App): PanelView {
       ['perfectSky', 'Perfect sky', 'sparkles', 'P'],
       ['twinkle', 'Twinkling', null],
     ]),
-    h('p', { class: 'note' }, '“Perfect sky” removes light pollution and haze so you can see what your sky would look like with no city lights at all.'),
+    h('p', { class: 'note' }, '“Perfect sky” removes light pollution and haze so you can see what your sky would look like with no city lights at all. By day, turn off “Atmosphere” to reveal the stars and planets that are always there behind the sunlight.'),
     h('div', { class: 'section-title' }, 'Guides'),
     toggles(app, [
       ['gridAltAz', 'Alt-az grid', null, 'Z'],

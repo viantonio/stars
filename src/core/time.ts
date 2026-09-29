@@ -86,13 +86,18 @@ export function describeRate(rate: number): string {
   const abs = Math.abs(rate);
   const sign = rate < 0 ? '−' : '';
   const units: [number, string][] = [
+    [31557600, 'yr'],
+    [2629800, 'mo'],
     [604800, 'wk'],
     [86400, 'day'],
     [3600, 'hr'],
     [60, 'min'],
   ];
   for (const [s, u] of units) {
-    if (abs >= s && abs % s === 0) return `${sign}${abs / s} ${u}/s`;
+    if (abs >= s) {
+      const v = abs / s;
+      return `${sign}${v >= 10 || Number.isInteger(v) ? Math.round(v) : v.toFixed(1)} ${u}/s`;
+    }
   }
-  return `${sign}${abs}×`;
+  return `${sign}${Math.round(abs)}×`;
 }

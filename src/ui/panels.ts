@@ -4,8 +4,10 @@ import { renderTonight } from './tonight';
 import { renderEvents } from './events';
 import { renderSearch } from './search';
 import { renderLayers, renderSettings, renderLocation } from './settingsPanels';
+import { renderMoments } from './moments';
+import { renderAsAbove } from './asAbove';
 
-export type PanelId = 'search' | 'tonight' | 'events' | 'layers' | 'location' | 'settings';
+export type PanelId = 'search' | 'tonight' | 'events' | 'layers' | 'location' | 'settings' | 'moments' | 'asabove';
 
 export interface PanelView {
   title: string;
@@ -25,6 +27,8 @@ const RENDERERS: Record<PanelId, (app: App) => PanelView> = {
   layers: renderLayers,
   location: renderLocation,
   settings: renderSettings,
+  moments: renderMoments,
+  asabove: renderAsAbove,
 };
 
 /** A single slide-in panel that hosts one view at a time. */

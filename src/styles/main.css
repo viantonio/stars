@@ -1615,3 +1615,254 @@ body.hide-ui .panel {
     bottom: calc(170px + var(--safe-bottom));
   }
 }
+
+/* ------------------------------------------------------------ Time jog dial */
+
+.tb-unit {
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 6px;
+  color-scheme: dark;
+  max-width: 132px;
+}
+
+.tb-sep {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: var(--line);
+}
+
+.jog {
+  position: relative;
+  height: 30px;
+  margin: 6px 4px 0;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: linear-gradient(90deg, rgba(126, 200, 255, 0.1), rgba(255, 255, 255, 0.02) 42%, rgba(255, 255, 255, 0.02) 58%, rgba(255, 207, 122, 0.12));
+  cursor: grab;
+  touch-action: none;
+  overflow: hidden;
+}
+
+.jog:active,
+.jog.active {
+  cursor: grabbing;
+  border-color: rgba(255, 207, 122, 0.4);
+}
+
+.jog-ticks {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.09) 0 1px, transparent 1px 12px);
+  mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+}
+
+.jog-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.jog.active .jog-label {
+  opacity: 0;
+}
+
+.jog-knob {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 50%;
+  width: 34px;
+  margin-left: -17px;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #ffd88f, #ffb347);
+  box-shadow: 0 0 14px rgba(255, 190, 90, 0.55);
+  transition: left 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+.jog.active .jog-knob {
+  transition: none;
+}
+
+.jog-knob::before,
+.jog-knob::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 1px;
+  background: rgba(60, 35, 0, 0.45);
+  left: 12px;
+}
+
+.jog-knob::after {
+  left: 19px;
+}
+
+@media (max-width: 760px) {
+  .tb-unit {
+    max-width: 104px;
+  }
+
+  .tb-sep {
+    display: none;
+  }
+
+  .jog {
+    height: 34px;
+  }
+
+  .toolbar {
+    bottom: calc(158px + var(--safe-bottom));
+  }
+
+  .toast-host {
+    bottom: calc(212px + var(--safe-bottom));
+  }
+}
+
+/* ------------------------------------------------------------ Moment banner */
+
+.moment-banner {
+  position: absolute;
+  top: calc(14px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 22;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 16px;
+  max-width: min(640px, calc(100vw - 28px));
+  border-color: rgba(255, 207, 122, 0.3);
+}
+
+.mb-star {
+  color: var(--gold);
+  font-size: 18px;
+  text-shadow: 0 0 12px var(--gold);
+}
+
+.mb-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.mb-text b {
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moment-banner .btn {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+@media (min-width: 761px) and (max-width: 1280px) {
+  .moment-banner {
+    top: calc(78px + var(--safe-top));
+  }
+}
+
+@media (max-width: 760px) {
+  .moment-banner {
+    top: calc(96px + var(--safe-top));
+    width: calc(100vw - 16px);
+    flex-wrap: wrap;
+  }
+
+  .mb-text {
+    flex: 1 1 100%;
+  }
+}
+
+/* ------------------------------------------------------------ Forms (moments, journal) */
+
+.field-input,
+textarea.field-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-size: 13.5px;
+  color-scheme: dark;
+}
+
+textarea.field-input {
+  height: auto;
+  min-height: 84px;
+  padding: 9px 10px;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: rgba(255, 207, 122, 0.5);
+}
+
+.field.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.field.two label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+label.check input {
+  accent-color: var(--gold-2);
+  width: 16px;
+  height: 16px;
+}
+
+.place-results {
+  display: flex;
+  flex-direction: column;
+  margin: 6px 0;
+}
+
+.place-results .result {
+  text-align: left;
+  width: 100%;
+}

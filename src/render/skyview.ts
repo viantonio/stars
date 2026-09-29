@@ -21,6 +21,8 @@ import { CometTails, type TailSpec } from './comets';
 import { MeteorShowerFX, type RadiantSource } from './meteors';
 import { Overlay, FONT_STACK } from './overlay';
 import { createLandscape, type Landscape } from './landscape';
+import { ayanamsaValue } from '../esoteric/ayanamsa';
+import { SIGN_GLYPHS, SIGN_NAMES, ELEMENT_COLORS } from '../ui/chartWheel';
 
 export interface FrameInfo {
   time: Date;
@@ -59,6 +61,9 @@ export class SkyView {
 
   private celestial = new THREE.Group();
   private equatorOfDate = new THREE.Group();
+  /** Frame of the true ecliptic of date (for the symbolic zodiac band). */
+  private eclipticOfDate = new THREE.Group();
+  private zodiacBand: SkyLines;
   private world = new THREE.Group();
   private atmosphere: Atmosphere;
   private stars: StarField;
@@ -101,6 +106,9 @@ export class SkyView {
   /** Recomputes the selection path when the site or time bucket changes. */
   selectionPathProvider: (() => [number, number][] | null) | null = null;
   frame: FrameInfo | null = null;
+  /** Motion trails: EQJ positions per body, split into segments at time jumps. */
+  private trails = new Map<MajorBodyId, THREE.Vector3[][]>();
+  private lastTrailSim = 0;
   private width = 1;
   private height = 1;
 
@@ -123,7 +131,8 @@ export class SkyView {
 
     this.celestial.matrixAutoUpdate = false;
     this.equatorOfDate.matrixAutoUpdate = false;
-    this.scene.add(this.celestial, this.equatorOfDate, this.world);
+    this.eclipticOfDate.matrixAutoUpdate = false;
+    this.scene.add(this.celestial, this.equatorOfDate, this.eclipticOfDate, this.world);
 
     this.atmosphere = new Atmosphere(textures.milkyway);
     this.scene.add(this.atmosphere.mesh);
@@ -202,6 +211,14 @@ export class SkyView {
     this.eclipticLine = new SkyLines(new Float32Array(ecl), { color: 0xd9a441, width: 1.4, opacity: 0.6 });
     this.celestial.add(this.eclipticLine.object);
 
+    // Zodiac band: ±8° about the ecliptic with the twelve 30° divisions.
+    const zb: number[] = [];
+    latitudeCircle(zb, 8, 'z', 2);
+    latitudeCircle(zb, -8, 'z', 2);
+    for (let k = 0; k < 12; k++) longitudeLine(zb, k * 30, 'z', -8, 8, 2);
+    this.zodiacBand = new SkyLines(new Float32Array(zb), { color: 0xc9a0ff, width: 1.2, opacity: 0.4 });
+    this.eclipticOfDate.add(this.zodiacBand.object);
+
     const mer: number[] = [];
     longitudeLine(mer, 0, 'y', -90, 90, 1);
     longitudeLine(mer, 180, 'y', -90, 90, 1);
@@ -213,7 +230,7 @@ export class SkyView {
     this.horizonLine = new SkyLines(new Float32Array(hor), { color: 0x6e8aa8, width: 1.2, opacity: 0.45, refract: false });
     this.world.add(this.horizonLine.object);
 
-    this.lineSets = [this.constellationLines, this.constellationBounds, this.gridAltAz, this.gridEq, this.eclipticLine, this.meridianLine, this.horizonLine];
+    this.lineSets = [this.constellationLines, this.constellationBounds, this.gridAltAz, this.gridEq, this.eclipticLine, this.meridianLine, this.horizonLine, this.zodiacBand];
 
     this.namedStars = [...catalogs.stars.meta.values()]
       .filter((m) => m.name)
@@ -392,6 +409,14 @@ export class SkyView {
     const r = A.Rotation_EQD_HOR(astroTime, observer).rot;
     this.equatorOfDate.matrix.set(-r[0][1], -r[1][1], -r[2][1], 0, r[0][2], r[1][2], r[2][2], 0, -r[0][0], -r[1][0], -r[2][0], 0, 0, 0, 0, 1);
     this.equatorOfDate.matrixWorldNeedsUpdate = true;
+    if (settings.zodiacBand) {
+      // ECT (true ecliptic of date) → EQJ → world, rotated back by the ayanamsa for the sidereal zodiac.
+      const e = A.Rotation_ECT_EQJ(astroTime).rot;
+      const ectToEqj = new THREE.Matrix4().set(e[0][0], e[1][0], e[2][0], 0, e[0][1], e[1][1], e[2][1], 0, e[0][2], e[1][2], e[2][2], 0, 0, 0, 0, 1);
+      const shift = settings.zodiac === 'sidereal' ? ayanamsaValue(time, settings.ayanamsa) : 0;
+      this.eclipticOfDate.matrix.copy(this.matrix).multiply(ectToEqj).multiply(new THREE.Matrix4().makeRotationZ(shift * DEG));
+      this.eclipticOfDate.matrixWorldNeedsUpdate = true;
+    }
 
     const bodies = computeAllBodies(astroTime, observer);
     const sun = bodies.get('Sun')!;
@@ -559,6 +584,8 @@ export class SkyView {
       });
     }
 
+    this.recordTrails(bodies, simMs, settings.trails);
+
     // ---- Layer visibility.
     this.constellationLines.object.visible = settings.constellationLines;
     this.constellationLines.material.opacity = 0.42 * (1 - daylight * 0.8);
@@ -567,6 +594,7 @@ export class SkyView {
     this.gridEq.object.visible = settings.gridEquatorial;
     this.eclipticLine.object.visible = settings.ecliptic;
     this.meridianLine.object.visible = settings.meridian;
+    this.zodiacBand.object.visible = settings.zodiacBand;
     this.horizonLine.object.visible = !settings.ground || settings.gridAltAz;
 
     this.frame = {
@@ -586,6 +614,37 @@ export class SkyView {
     this.renderer.render(this.scene, this.camera);
     this.drawOverlay(settings, limitingMag, daylight);
     return this.frame;
+  }
+
+  /** Remember where the Sun, Moon and planets have been as time runs. */
+  private recordTrails(bodies: Map<MajorBodyId, BodyState>, simMs: number, enabled: boolean): void {
+    if (!enabled) {
+      if (this.trails.size) this.trails.clear();
+      return;
+    }
+    // A big jump (date picker, stepping by years) starts a fresh segment.
+    const jump = Math.abs(simMs - this.lastTrailSim) > 45 * 86400e3;
+    this.lastTrailSim = simMs;
+    for (const [id, st] of bodies) {
+      if (id === 'Pluto') continue;
+      let segs = this.trails.get(id);
+      if (!segs) this.trails.set(id, (segs = [[]]));
+      if (jump && segs[segs.length - 1].length) segs.push([]);
+      const seg = segs[segs.length - 1];
+      const last = seg[seg.length - 1];
+      if (!last || last.angleTo(st.dirEqj) > 0.12 * DEG) seg.push(st.dirEqj.clone());
+      // Bound memory: ~2000 points per body.
+      let total = segs.reduce((n, x) => n + x.length, 0);
+      while (total > 2000) {
+        segs[0].shift();
+        if (!segs[0].length && segs.length > 1) segs.shift();
+        total--;
+      }
+    }
+  }
+
+  clearTrails(): void {
+    this.trails.clear();
   }
 
   private earthShadow(time: A.AstroTime, observer: A.Observer): { dir: THREE.Vector3; umbra: number; penumbra: number } | null {
@@ -850,6 +909,42 @@ export class SkyView {
         if (!p?.onScreen) continue;
         o.symbol({ x: p.x, y: p.y, kind: 'radiant', size: 11, color: '#ffb36b', alpha: 0.8 });
         o.label({ x: p.x, y: p.y, dx: 14, dy: 4, text: `${s.shower.name} radiant`, color: '#ffc58f', font: `500 11px ${FONT_STACK}`, priority: 50 });
+      }
+    }
+
+    // Zodiac sign glyphs along the band (symbolic signs, not the constellations).
+    if (settings.zodiacBand) {
+      const m = this.eclipticOfDate.matrix;
+      for (let k = 0; k < 12; k++) {
+        const lon = (k * 30 + 15) * DEG;
+        const lat = 4.5 * DEG;
+        v.set(Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat)).applyMatrix4(m).normalize();
+        if (!aboveGround(v)) continue;
+        const p = this.project(v);
+        if (!p?.onScreen) continue;
+        o.label({ x: p.x, y: p.y, text: SIGN_GLYPHS[k], color: ELEMENT_COLORS[k % 4], font: `400 20px ${FONT_STACK}`, align: 'center', priority: 70, alpha: 0.85 * labelAlpha });
+        o.label({ x: p.x, y: p.y, dy: 14, text: SIGN_NAMES[k].toUpperCase(), color: '#d9c2ff', font: `600 9px ${FONT_STACK}`, spacing: 1.5, align: 'center', priority: 69, alpha: 0.6 * labelAlpha });
+      }
+    }
+
+    // Motion trails against the stars.
+    if (settings.trails) {
+      for (const [id, segs] of this.trails) {
+        const tint = f.bodies.get(id)?.info.tint ?? '#ffffff';
+        for (const seg of segs) {
+          const pts: [number, number][] = [];
+          for (const e of seg) {
+            const w = v.copy(e).applyMatrix3(m3);
+            if (settings.ground && w.y < -0.02) {
+              if (pts.length > 1) o.path(pts.splice(0), tint, 1.6, undefined, 0.55);
+              pts.length = 0;
+              continue;
+            }
+            const p = this.project(w);
+            if (p) pts.push([p.x, p.y]);
+          }
+          if (pts.length > 1) o.path(pts, tint, 1.6, undefined, 0.55);
+        }
       }
     }
 

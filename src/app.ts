@@ -20,6 +20,8 @@ import { Toasts } from './ui/toast';
 import { showWelcome, showHelp } from './ui/modal';
 import { PointingMode } from './ui/pointing';
 import { h } from './ui/dom';
+import { MomentStore, JournalStore, type Moment } from './esoteric/moments';
+import { MomentBanner } from './ui/momentBanner';
 import type { Orrery } from './render/orrery';
 
 /** Top-level controller: owns the clock, settings, sky view and UI. */
@@ -31,7 +33,14 @@ export class App {
   readonly panels: PanelHost;
   readonly info: InfoCard;
   readonly pointing: PointingMode;
+  readonly timebar: TimeBar;
   private site: SiteLocation;
+  private momentView: { moment: Moment; site: SiteLocation } | null = null;
+  readonly moments = new MomentStore();
+  readonly journal = new JournalStore();
+  /** Whose chart the As Above panel shows: 'now' or a moment id. */
+  asAboveSubject: string = 'now';
+  private momentBanner: MomentBanner;
   private tonightCache: { key: string; value: Tonight } | null = null;
   private eventsCache: { key: string; value: SkyEvent[] } | null = null;
   private frameListeners = new Set<(f: FrameInfo) => void>();
@@ -48,11 +57,12 @@ export class App {
     this.view = new SkyView(root, catalogs, textures, () => this.settings.get());
     this.toasts = new Toasts(root);
     new Hud(this);
-    new TimeBar(this);
+    this.timebar = new TimeBar(this);
     new Toolbar(this);
     this.info = new InfoCard(this);
     this.panels = new PanelHost(this);
     this.pointing = new PointingMode(this);
+    this.momentBanner = new MomentBanner(this);
     root.append(h('div', { class: 'night-filter' }));
 
     this.view.controls.onClick = (x, y) => this.select(this.view.pick(x, y));
@@ -71,6 +81,10 @@ export class App {
     this.settings.onChange((s, changed) => {
       if (changed.includes('locationId') || changed.includes('custom')) {
         this.site = this.resolveSite();
+        if (this.momentView) {
+          this.momentView = null;
+          this.momentBanner.hide();
+        }
         this.tonightCache = null;
         this.eventsCache = null;
       }
@@ -94,8 +108,44 @@ export class App {
     return PRESET_LOCATIONS.find((l) => l.id === s.locationId) ?? PRESET_LOCATIONS[0];
   }
 
+  /** The site being shown: a saved moment's place while viewing it, else the chosen location. */
   getSite(): SiteLocation {
-    return this.site;
+    return this.momentView?.site ?? this.site;
+  }
+
+  // ------------------------------------------------------------- moments
+
+  /** Show the sky of a saved moment: its place and instant, clock paused. */
+  viewMoment(m: Moment): void {
+    const site = customLocation(m.place.lat, m.place.lon, m.place.elevation, m.name, m.place.timeZone);
+    site.region = `${m.place.name}${m.place.region ? `, ${m.place.region}` : ''}`;
+    site.bortle = 4;
+    this.momentView = { moment: m, site };
+    this.tonightCache = null;
+    this.eventsCache = null;
+    this.time.setTime(new Date(m.utc));
+    this.time.setRate(0);
+    this.momentBanner.show(m);
+    this.toasts.show(m.kind === 'birth' ? 'The sky at the moment you were born' : `The sky of “${m.name}”`, 3500);
+  }
+
+  exitMoment(): void {
+    if (!this.momentView) return;
+    this.momentView = null;
+    this.tonightCache = null;
+    this.eventsCache = null;
+    this.momentBanner.hide();
+    this.time.resetToNow();
+  }
+
+  /** Back to the live sky (leaving any moment being viewed). */
+  goNow(): void {
+    if (this.momentView) this.exitMoment();
+    else this.time.resetToNow();
+  }
+
+  get viewingMoment(): Moment | null {
+    return this.momentView?.moment ?? null;
   }
 
   setLocation(id: string, custom?: { lat: number; lon: number; elevation: number; name: string; timeZone?: string }): void {
@@ -216,18 +266,18 @@ export class App {
     const f = this.frame;
     const t = f?.time ?? new Date();
     // Key on the local calendar day (the summary is for "the coming night").
-    const key = `${this.site.id}:${this.site.lat}:${this.site.lon}:${observingNoon(t, this.site.timeZone).getTime()}`;
-    if (!this.tonightCache || this.tonightCache.key !== key) this.tonightCache = { key, value: tonightSummary(this.site, t) };
+    const key = `${this.getSite().id}:${this.getSite().lat}:${this.getSite().lon}:${observingNoon(t, this.getSite().timeZone).getTime()}`;
+    if (!this.tonightCache || this.tonightCache.key !== key) this.tonightCache = { key, value: tonightSummary(this.getSite(), t) };
     return this.tonightCache.value;
   }
 
   events(): SkyEvent[] {
     const t = this.frame?.time ?? new Date();
-    const key = `${this.site.id}:${this.site.lat}:${t.toISOString().slice(0, 7)}`;
+    const key = `${this.getSite().id}:${this.getSite().lat}:${t.toISOString().slice(0, 7)}`;
     if (!this.eventsCache || this.eventsCache.key !== key) {
       const start = new Date(t.getTime() - 7 * 86400e3);
       const end = new Date(t.getTime() + 380 * 86400e3);
-      this.eventsCache = { key, value: computeEvents(this.site, start, end) };
+      this.eventsCache = { key, value: computeEvents(this.getSite(), start, end) };
     }
     return this.eventsCache.value;
   }
@@ -252,11 +302,11 @@ export class App {
       // The sky is hidden: refresh it (and the HUD's frame info) only occasionally.
       if (!this.frame || now - this.lastSkyUpdate > 500) {
         this.lastSkyUpdate = now;
-        this.frame = this.view.update(time, this.site, settings);
+        this.frame = this.view.update(time, this.getSite(), settings);
       }
       this.orrery.update(time, this.smallBodyList);
     } else {
-      this.frame = this.view.update(time, this.site, settings);
+      this.frame = this.view.update(time, this.getSite(), settings);
     }
     this.pointing.update();
     if (now - this.lastUiUpdate > 200) {
@@ -299,7 +349,7 @@ export class App {
           break;
         case 'n':
         case 'N':
-          this.time.resetToNow();
+          this.goNow();
           this.toasts.show('Back to the present');
           break;
         case ']':
@@ -307,6 +357,16 @@ export class App {
           break;
         case '[':
           this.time.stepRate(-1);
+          break;
+        case ',':
+          this.timebar.step(-1);
+          break;
+        case '.':
+          this.timebar.step(1);
+          break;
+        case 'x':
+          s.toggle('trails');
+          this.toasts.show(s.get().trails ? 'Motion trails on — run time to watch paths form' : 'Motion trails off');
           break;
         case 'c':
           s.toggle('constellationLines');
@@ -343,7 +403,7 @@ export class App {
           break;
         case 'p':
           s.toggle('perfectSky');
-          this.toasts.show(s.get().perfectSky ? 'Perfect sky: no light pollution' : `Realistic sky for ${this.site.name}`);
+          this.toasts.show(s.get().perfectSky ? 'Perfect sky: no light pollution' : `Realistic sky for ${this.getSite().name}`);
           break;
         case 'u':
           document.body.classList.toggle('hide-ui');
