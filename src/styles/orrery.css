@@ -1,0 +1,325 @@
+/* ------------------------------------------------------------ Solar System view (orrery) */
+
+.orrery {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.orrery-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  z-index: 5;
+  touch-action: none;
+  cursor: grab;
+}
+
+.orrery-canvas:active {
+  cursor: grabbing;
+}
+
+.orrery-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.orrery-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--c, #cfd8e6) 55%, #fff);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.25s;
+  will-change: transform;
+}
+
+.orrery-label.on {
+  opacity: 1;
+}
+
+.orrery-label.clickable.on {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.orrery-label.sun {
+  color: var(--gold);
+}
+
+.orrery-label.moon {
+  font-size: 11px;
+  font-weight: 550;
+  color: #d5dbe6;
+}
+
+.orrery-label.comet {
+  font-size: 11px;
+  font-weight: 550;
+  color: #9ff0da;
+}
+
+.orrery-label.asteroid {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #a79f93;
+}
+
+.orrery-label.grid {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: rgba(170, 190, 220, 0.42);
+  text-shadow: none;
+}
+
+.orrery-label.active {
+  color: var(--gold);
+}
+
+.orrery-label.clickable.on:hover {
+  color: #fff;
+}
+
+/* ---- Overlay panel */
+
+.orrery-panel {
+  position: absolute;
+  top: calc(84px + var(--safe-top));
+  right: calc(14px + var(--safe-right));
+  z-index: 16;
+  width: 252px;
+  border-radius: var(--radius);
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.op-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.op-title {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.op-date {
+  font-size: 12px;
+  color: var(--gold);
+  margin-top: 2px;
+}
+
+.op-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  flex: none;
+}
+
+.op-close:hover {
+  background: var(--glass-hover);
+  color: var(--text);
+}
+
+.op-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.op-presets,
+.op-toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.op-bodies {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.op-body,
+.op-btn,
+.op-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.op-btn {
+  justify-content: center;
+  border-color: var(--line);
+}
+
+.op-body i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--c);
+  box-shadow: 0 0 6px var(--c);
+}
+
+.op-body:hover,
+.op-btn:hover,
+.op-toggle:hover {
+  background: var(--glass-hover);
+  color: var(--text);
+}
+
+.op-body.active,
+.op-btn.active {
+  background: rgba(255, 207, 122, 0.12);
+  border-color: rgba(255, 207, 122, 0.28);
+  color: var(--gold);
+}
+
+.op-toggle {
+  border-color: var(--line);
+}
+
+.op-sw {
+  position: relative;
+  width: 22px;
+  height: 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  flex: none;
+  transition: background 0.15s;
+}
+
+.op-sw::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #cfd6e2;
+  transition: transform 0.15s;
+}
+
+.op-toggle.on {
+  color: var(--text);
+}
+
+.op-toggle.on .op-sw {
+  background: rgba(255, 207, 122, 0.7);
+}
+
+.op-toggle.on .op-sw::after {
+  transform: translateX(9px);
+  background: #fff;
+}
+
+.op-readout {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+  min-height: 1.45em;
+}
+
+.op-readout:empty {
+  display: none;
+}
+
+.op-note {
+  font-size: 10.5px;
+  color: var(--faint);
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+/* Hide sky-only chrome while the orrery is up. */
+body.orrery-mode .readout,
+body.orrery-mode .zoom-buttons,
+body.orrery-mode .crosshair,
+body.orrery-mode .pointing-at {
+  display: none;
+}
+
+body.hide-ui .orrery-panel,
+body.hide-ui .orrery-labels {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .orrery-panel {
+    top: auto;
+    left: calc(8px + var(--safe-left));
+    right: calc(8px + var(--safe-right));
+    bottom: calc(172px + var(--safe-bottom));
+    width: auto;
+    padding: 6px;
+    gap: 4px;
+    border-radius: 14px;
+  }
+
+  .op-head,
+  .op-note {
+    display: none;
+  }
+
+  .op-scroll {
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .op-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .op-presets,
+  .op-bodies,
+  .op-toggles {
+    display: flex;
+    gap: 4px;
+    flex: none;
+  }
+
+  .op-bodies,
+  .op-toggles {
+    padding-left: 4px;
+    border-left: 1px solid var(--line);
+  }
+
+  .op-readout {
+    padding: 0 6px 2px;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

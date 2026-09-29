@@ -225,7 +225,7 @@ const bind = (id: keyof State) => {
 const viewEl = document.getElementById('viewAz') as HTMLInputElement;
 viewEl.value = String(S.az);
 viewEl.addEventListener('input', () => (S.az = Number(viewEl.value)));
-addEventListener('keydown', (e) => {
+window.addEventListener('keydown', (e) => {
   const kinds: HorizonKind[] = ['foothills', 'city', 'alpine', 'flat'];
   const n = Number(e.key);
   if (n >= 1 && n <= 4) {
@@ -242,15 +242,15 @@ addEventListener('keydown', (e) => {
 });
 let drag: { x: number; y: number; az: number; alt: number } | null = null;
 renderer.domElement.addEventListener('pointerdown', (e) => (drag = { x: e.clientX, y: e.clientY, az: S.az, alt: S.alt }));
-addEventListener('pointerup', () => (drag = null));
-addEventListener('pointermove', (e) => {
+window.addEventListener('pointerup', () => (drag = null));
+window.addEventListener('pointermove', (e) => {
   if (!drag) return;
   const k = S.fov / innerHeight;
   S.az = (drag.az - (e.clientX - drag.x) * k + 360) % 360;
   S.alt = THREE.MathUtils.clamp(drag.alt + (e.clientY - drag.y) * k, -89, 89);
 });
-addEventListener('wheel', (e) => (S.fov = THREE.MathUtils.clamp(S.fov * (e.deltaY > 0 ? 1.1 : 0.9), 5, 100)));
-addEventListener('resize', () => renderer.setSize(innerWidth, innerHeight));
+window.addEventListener('wheel', (e) => (S.fov = THREE.MathUtils.clamp(S.fov * (e.deltaY > 0 ? 1.1 : 0.9), 5, 100)));
+window.addEventListener('resize', () => renderer.setSize(innerWidth, innerHeight));
 if (q.get('shot') !== '1') {
   const loop = () => {
     render();

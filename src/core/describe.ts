@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { worldToAltAz, vecToRaDec } from '../astro/frames';
 import { moonPhaseName } from '../astro/events';
 import { smallBodyState } from '../astro/smallbodies';
-import { predictPasses, satelliteTrack, type SatPass } from '../astro/satellites';
+import { predictPasses, satelliteTrack, type SatPass, type SatelliteEntry } from '../astro/satellites';
 import { activeShowers, expectedHourlyRate, METEOR_SHOWERS } from '../astro/meteors';
 import type { SkyView } from '../render/skyview';
 import { shortCometName } from '../render/skyview';
@@ -85,6 +85,18 @@ function altitudeStatus(dir: THREE.Vector3 | null, visibleByMag: boolean, sunAlt
   if (!visibleByMag) return { text: sunAlt > -6 ? 'Up, but lost in the bright sky' : 'Up, but too faint for the naked eye here', tone: 'warn' };
   if (alt < 10) return { text: 'Visible now · low on the horizon', tone: 'warn' };
   return { text: 'Visible now', tone: 'good' };
+}
+
+const passCache = new Map<string, { at: number; passes: SatPass[] }>();
+
+/** Pass predictions are costly; reuse them while the clock stays within a few minutes. */
+function cachedPasses(sat: SatelliteEntry, site: { id: string; lat: number; lon: number; elevation: number }, time: Date): SatPass[] {
+  const key = `${sat.noradId}:${site.id}:${site.lat}:${site.lon}`;
+  const hit = passCache.get(key);
+  if (hit && Math.abs(time.getTime() - hit.at) < 5 * 60e3) return hit.passes.filter((p) => p.set.time > time);
+  const passes = predictPasses(sat, site, time, 5, 10).slice(0, 8);
+  passCache.set(key, { at: time.getTime(), passes });
+  return passes;
 }
 
 export function describe(o: SkyObject, view: SkyView, catalogs: Catalogs): ObjectInfo | null {
@@ -229,7 +241,7 @@ export function describe(o: SkyObject, view: SkyView, catalogs: Catalogs): Objec
       }
       rows.push({ label: 'NORAD ID', value: String(sat.noradId) });
       rows.push({ label: 'TLE epoch', value: sat.epoch.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) });
-      const passes = predictPasses(sat, f.site, f.time, 5, 10).slice(0, 8);
+      const passes = cachedPasses(sat, f.site, f.time);
       return {
         title: sat.name,
         subtitle: sat.fullName !== sat.name ? sat.fullName : 'Artificial satellite',

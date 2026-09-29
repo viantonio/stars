@@ -20,6 +20,7 @@ import { Toasts } from './ui/toast';
 import { showWelcome, showHelp } from './ui/modal';
 import { PointingMode } from './ui/pointing';
 import { h } from './ui/dom';
+import type { Orrery } from './render/orrery';
 
 /** Top-level controller: owns the clock, settings, sky view and UI. */
 export class App {
@@ -37,7 +38,12 @@ export class App {
   private lastUiUpdate = 0;
   frame: FrameInfo | null = null;
 
-  constructor(readonly root: HTMLElement, readonly catalogs: Catalogs, textures: Record<string, THREE.Texture>) {
+  private orrery: Orrery | null = null;
+  private orreryLoading = false;
+  private lastSkyUpdate = 0;
+  private smallBodyList: SmallBodyElements[] = [];
+
+  constructor(readonly root: HTMLElement, readonly catalogs: Catalogs, private readonly textures: Record<string, THREE.Texture>) {
     this.site = this.resolveSite();
     this.view = new SkyView(root, catalogs, textures, () => this.settings.get());
     this.toasts = new Toasts(root);
@@ -51,8 +57,12 @@ export class App {
 
     this.view.controls.onClick = (x, y) => this.select(this.view.pick(x, y));
     this.view.controls.onUserMove = () => this.info.onUserMove();
+    let lastHover = 0;
     this.view.renderer.domElement.addEventListener('pointermove', (e) => {
       if (e.pointerType !== 'mouse' || e.buttons) return;
+      const now = performance.now();
+      if (now - lastHover < 60) return;
+      lastHover = now;
       const o = this.view.pick(e.clientX, e.clientY, 14);
       this.view.setHover(o && o.kind !== 'constellation' ? o : null);
       this.view.renderer.domElement.style.cursor = o && o.kind !== 'constellation' ? 'pointer' : '';
@@ -101,7 +111,7 @@ export class App {
     try {
       const [cometsTxt, asteroids] = await Promise.all([loadText('CometEls.txt'), loadJSON<unknown>('asteroids.json')]);
       small.push(...parseCometEls(cometsTxt), ...parseAsteroids(asteroids));
-      this.view.setSmallBodies([...small]);
+      this.setSmallBodies([...small]);
     } catch (e) {
       console.warn('Small bodies unavailable', e);
     }
@@ -132,11 +142,39 @@ export class App {
       const r = await fetch('https://www.minorplanetcenter.net/iau/MPCORB/CometEls.txt', { signal: timeout(15000) });
       if (r.ok) {
         const live = parseCometEls(await r.text());
-        if (live.length > 100) this.view.setSmallBodies([...live, ...small.filter((s) => s.kind === 'asteroid')]);
+        if (live.length > 100) this.setSmallBodies([...live, ...small.filter((s) => s.kind === 'asteroid')]);
       }
     } catch {
       /* keep bundled comet elements */
     }
+  }
+
+  private setSmallBodies(list: SmallBodyElements[]): void {
+    this.smallBodyList = list;
+    this.view.setSmallBodies([...list]);
+  }
+
+  // ------------------------------------------------------------- solar system view
+
+  get orreryVisible(): boolean {
+    return this.orrery?.visible ?? false;
+  }
+
+  /** Toggles the 3D Solar System view (created lazily on first use). */
+  toggleOrrery(): void {
+    if (this.orrery) {
+      if (this.orrery.visible) this.orrery.hide();
+      else this.orrery.show();
+      return;
+    }
+    if (this.orreryLoading) return;
+    this.orreryLoading = true;
+    void import('./render/orrery').then(({ Orrery }) => {
+      this.orreryLoading = false;
+      this.orrery = new Orrery(this.root, this.textures);
+      this.info.close();
+      this.orrery.show();
+    });
   }
 
   // ------------------------------------------------------------- selection
@@ -206,9 +244,18 @@ export class App {
     requestAnimationFrame(this.loop);
     const settings = this.settings.get();
     const time = this.time.now();
-    this.frame = this.view.update(time, this.site, settings);
-    this.pointing.update();
     const now = performance.now();
+    if (this.orrery?.visible) {
+      // The sky is hidden: refresh it (and the HUD's frame info) only occasionally.
+      if (!this.frame || now - this.lastSkyUpdate > 500) {
+        this.lastSkyUpdate = now;
+        this.frame = this.view.update(time, this.site, settings);
+      }
+      this.orrery.update(time, this.smallBodyList);
+    } else {
+      this.frame = this.view.update(time, this.site, settings);
+    }
+    this.pointing.update();
     if (now - this.lastUiUpdate > 200) {
       this.lastUiUpdate = now;
       for (const l of this.frameListeners) l(this.frame);
@@ -312,8 +359,13 @@ export class App {
         case '?':
           showHelp(this);
           break;
+        case 'o':
+        case 'O':
+          this.toggleOrrery();
+          break;
         case 'Escape':
           if (this.panels.current) this.panels.close();
+          else if (this.orrery?.visible) this.orrery.hide();
           else this.select(null);
           break;
       }

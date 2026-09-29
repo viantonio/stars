@@ -781,15 +781,10 @@ class Builder {
       ectx.clearRect(0, 0, VW, VH);
     }
     const p = new Paint(ctx, ectx);
-    const T0 = performance.now();
     draw(p);
-    const T1 = performance.now();
     const L = ctx.getImageData(0, 0, VW, VH).data;
     const E = ectx ? ectx.getImageData(0, 0, VW, VH).data : null;
-    const T2 = performance.now();
     this.composite(o, L, E, p.crest);
-    const T3 = performance.now();
-    console.log(`TIMING draw ${(T1-T0).toFixed(0)} read ${(T2-T1).toFixed(0)} comp ${(T3-T2).toFixed(0)}`);
   }
 
   private composite(o: LayerOpts, L: Uint8ClampedArray, E: Uint8ClampedArray | null, crest: Float32Array | null): void {
@@ -945,7 +940,7 @@ function woodland(
     const alt = top - rng.range(0, 1) ** 1.4 * (top - bottom);
     if (patch(az, alt) < thr) continue;
     const r = rng.range(rMin, rMax);
-    wp.add(az, r * 2, (p, rr, a) => blob(p, rr, a, alt, r * 1.25, r * 0.85, 0.28, 0.06, 14));
+    wp.add(az, r * 2, (p, rr, a) => leafy(p, rr, a, alt, r * 1.25, r * 0.9, rr.int(6, 9)));
   }
 }
 
@@ -1009,11 +1004,11 @@ function buildFoothills(b: Builder, rng: Rng): KindConfig {
   const f4 = fbm(rng, 5, 4, 0.5);
   const nearHills = (az: number) => 0.05 + 1.0 * east(az) + 1.25 * f4(az);
   const patch4 = patchNoise(rng, 10);
-  b.layer({ depth: 0.38, normR: 7, vR: 6, vGain: 0.12, covGain: 0.7, ntGain: 3.5, ntFall: 1.0, detail: [0.24, 10, 1.4, 3, 1], lights: true }, (p) => {
+  b.layer({ depth: 0.38, normR: 7, vR: 6, vGain: 0.12, covGain: 0.7, ntGain: 3.5, ntFall: 1.0, detail: [0.16, 10, 1.4, 3, 1], lights: true }, (p) => {
     p.ridge(nearHills, '#bca36a', '#977f4d', 3);
     const wood = new WPath(rng);
     patches(wood, rng, nearHills, 1300, ALT_MIN, 0.3, 1.0, (az, alt) => patch4(az, alt) - 0.05, 0.45);
-    p.fill(wood, p.canopy(rng, '#474d31', '#343a24', '#5b6240', 2.4, 1.0));
+    p.fill(wood, p.canopy(rng, '#474d31', '#383e27', '#565d3d', 2.2, 1.0));
     const dark = new WPath(rng);
     const gray = new WPath(rng);
     woodland(dark, rng, nearHills, 1500, ALT_MIN, 0.08, 0.2, patch4, -0.1);
@@ -1050,11 +1045,11 @@ function buildFoothills(b: Builder, rng: Rng): KindConfig {
   const f6b = fbm(rng, 16, 2);
   const close = (az: number) => -2.2 + 3.6 * Math.max(0, f6(az) + 0.25) ** 1.2 + 0.12 * f6b(az);
   const patch6 = patchNoise(rng, 8);
-  b.layer({ depth: 0.2, normR: 10, vR: 8, vGain: 0.15, covGain: 0.8, ntGain: 3, ntFall: 1.2, detail: [0.3, 9, 1.3, 3, 1] }, (p) => {
+  b.layer({ depth: 0.2, normR: 10, vR: 8, vGain: 0.15, covGain: 0.8, ntGain: 3, ntFall: 1.2, detail: [0.14, 31, 0.8, 3, 1] }, (p) => {
     p.ridge(close, '#b99f66', '#8d7648', 2.5);
     const wood = new WPath(rng);
     patches(wood, rng, close, 900, ALT_MIN, 0.5, 1.6, (az, alt) => patch6(az, alt) - 0.12, 0.45);
-    p.fill(wood, p.canopy(rng, '#454b2f', '#323722', '#5a6140', 3.4, 1.3));
+    p.fill(wood, p.canopy(rng, '#454b2f', '#373d26', '#51583a', 3.0, 1.2));
     const oaks = new WPath(rng);
     const pines = new WPath(rng);
     woodland(oaks, rng, close, 900, ALT_MIN, 0.15, 0.35, patch6, 0.0);
@@ -1078,7 +1073,7 @@ function buildFoothills(b: Builder, rng: Rng): KindConfig {
   const f5 = fbm(rng, 14, 3);
   const f5b = fbm(rng, 3, 2);
   const fg = (az: number) => -2.9 + 0.3 * f5(az) + 1.3 * f5b(az);
-  b.layer({ depth: 0.06, normR: 18, vR: 14, vGain: 0.04, covGain: 0.9, ntGain: 2.5, ntFall: 1.5, detail: [0.4, 8, 1.2, 3, 0.8] }, (p) => {
+  b.layer({ depth: 0.06, normR: 18, vR: 14, vGain: 0.04, covGain: 0.9, ntGain: 2.5, ntFall: 1.5, detail: [0.14, 31, 0.6, 3, 0.8] }, (p) => {
     p.ridge(fg, '#a98f5a', '#7c6842', 3);
     const pines = new WPath(rng);
     const oaks = new WPath(rng);
@@ -1518,7 +1513,7 @@ function buildAlpine(b: Builder, rng: Rng): KindConfig {
   // 3 · Granite domes and valley walls: Half Dome, North/Basket Domes, Mt Starr King, Liberty Cap, the west rim.
   const halfDome = pchip([
     [51, -1.2], [54.0, 0.1], [55.6, 1.5], [56.5, 3.0], [56.75, 5.0], [56.95, 6.6], [57.25, 7.15], [58.0, 7.42], [60.0, 7.5],
-    [62.0, 7.38], [64.0, 7.0], [66.0, 6.3], [67.5, 5.5], [68.8, 4.6], [70.0, 4.0], [72.5, 3.55], [76, 3.1], [80, 2.0], [85, 0.8], [90, -0.2],
+    [62.0, 7.38], [64.0, 7.0], [66.0, 6.3], [67.5, 5.5], [68.8, 4.6], [70.0, 3.9], [71.5, 3.2], [73.5, 2.6], [76, 2.0], [80, 1.2], [85, 0.5], [90, -0.2],
   ]);
   const northDome = pchip([[344, -0.6], [348, 0.8], [352, 2.1], [355, 2.5], [358, 2.4], [361, 2.1], [363, 2.8], [366, 3.5], [369, 3.3], [373, 2.0], [378, 0.6], [383, -0.4]]);
   const starrKing = pchip([[113, -1.3], [118, 0.4], [122, 2.2], [124.5, 3.8], [126.5, 4.8], [127.8, 5.1], [129, 4.8], [131.5, 3.4], [135, 1.8], [140, 0.6], [146, -1.3]]);
@@ -1545,19 +1540,25 @@ function buildAlpine(b: Builder, rng: Rng): KindConfig {
     const cN2 = fbm(rng, 140, 2);
     const granite = new Path2D();
     const streaks = new WPath(rng);
+    /** Base altitude of the bare-granite dome that forms the crest here, or NaN. */
+    const domeBase = (az: number): number => {
+      const a = wrap360(az);
+      const top = domes(az);
+      if (halfDome(a) >= top - 0.01 && halfDome(a) > 1.0) return 1.2;
+      if (starrKing(a) >= top - 0.01 && starrKing(a) > 2.0) return 2.2;
+      if (libertyCap(a) >= top - 0.01 && libertyCap(a) > 0.9) return 1.0;
+      return NaN;
+    };
     const gTop = (az: number) => {
       const top = domes(az);
-      return bald(az, top) ? top + 0.05 : top - 0.18 - 0.25 * (0.5 + 0.5 * cN2(az));
+      return Number.isNaN(domeBase(az)) ? top - 0.18 - 0.25 * (0.5 + 0.5 * cN2(az)) : top + 0.05;
     };
     const gBot = (az: number) => {
-      const top = domes(az);
-      if (bald(az, top)) {
-        const a = wrap360(az);
-        const base = halfDome(a) > 1.2 ? 1.2 : starrKing(a) > 2.2 ? 2.2 : 1.0;
-        return base + 0.35 * cN2(az * 2);
-      }
-      const c = cN(az);
-      return c < -0.12 ? top : top - 0.6 - 3.2 * (c + 0.12) - 0.35 * cN2(az * 3);
+      const t = gTop(az);
+      const db = domeBase(az);
+      if (!Number.isNaN(db)) return Math.min(t, db + 0.35 * cN2(az * 2));
+      const thick = Math.max(0, cN(az) + 0.12) * 4.2;
+      return t - thick - 0.35 * cN2(az * 3) * Math.min(1, thick);
     };
     // Build the granite region as runs of azimuth where a cliff band exists.
     const step = 0.08;
@@ -1724,7 +1725,7 @@ function buildFlat(b: Builder, rng: Rng): KindConfig {
     p.fill(t, '#56634f');
   });
   const f2 = fbm(rng, 16, 3);
-  b.layer({ depth: 0.4, normR: 6, covGain: 0.8, detail: [0.14, 31, 1, 9, 1], lights: true }, (p) => {
+  b.layer({ depth: 0.3, normR: 6, covGain: 0.8, detail: [0.14, 31, 1, 9, 1], lights: true }, (p) => {
     p.ridge((az) => -0.1 + 0.05 * f2(az), '#5f6246', '#56593f', 1);
     for (let i = 0; i < 10; i++) p.light(rng.range(0, 360), rng.range(0.0, 0.2), 0.03, rng.range(0.35, 0.7), rng.pick([HUE_WARM, HUE_SODIUM, HUE_LED]));
     const trees = new WPath(rng);
@@ -1744,8 +1745,8 @@ function buildFlat(b: Builder, rng: Rng): KindConfig {
   });
   const g = fbm(rng, 30, 2);
   const ground = (az: number) => -0.7 + 0.05 * g(az);
-  b.layer({ depth: 0.06, normR: 12, detail: [0.18, 8, 1.2, 3, 1] }, (p) => {
-    p.ridge(ground, '#7e7a52', '#66623f', 3);
+  b.layer({ depth: 0.06, normR: 12, vGain: 0.04, detail: [0.12, 31, 0.6, 3, 0.8] }, (p) => {
+    p.ridge(ground, p.grass(rng, '#7a7650', '#625e3c', '#8f8a5e', 3.0, 1000), '', 3);
     const grass = new WPath(rng);
     grassTufts(grass, rng, ground, 0.1, 0.35, 0.1);
     const posts = new Path2D();
@@ -1829,7 +1830,7 @@ float lnoise(vec2 p) {
 vec3 sunLight(float a) {
   float t = smoothstep(-2.0, 25.0, a);
   vec3 c = mix(vec3(1.0, 0.36, 0.13), vec3(1.0, 0.95, 0.88), t);
-  float I = smoothstep(-5.0, 4.0, a) * (0.4 + 0.6 * smoothstep(0.0, 30.0, a));
+  float I = smoothstep(-5.0, 3.0, a) * (0.75 + 0.25 * smoothstep(0.0, 30.0, a));
   return c * I * 1.35;
 }
 vec3 hueCol(float h) {
@@ -1904,10 +1905,10 @@ void main() {
   // Skylight (hemispherical): mostly sky colour from above.
   float skyL = dot(uSky, vec3(0.2126, 0.7152, 0.0722));
   vec3 skyTint = mix(uSky, skyL * vec3(0.72, 0.9, 1.35), 0.55 * smoothstep(-10.0, 2.0, uSunAlt));
-  vec3 amb = skyTint * (0.42 + 0.3 * nrm.y);
+  vec3 amb = skyTint * (0.32 + 0.3 * nrm.y);
   // Moonlight.
   float mUp = smoothstep(-0.02, 0.2, uMoonDir.y);
-  light += vec3(0.62, 0.72, 0.95) * 0.09 * uMoonIllum * mUp * max(dot(nrm, uMoonDir) * 0.8 + 0.25, 0.0);
+  light += vec3(0.62, 0.72, 0.95) * 0.06 * uMoonIllum * mUp * max(dot(nrm, uMoonDir) * 0.8 + 0.25, 0.0);
   // Urban skyglow reflected by the ground.
   light += vec3(1.0, 0.62, 0.32) * uLP * uLP * 0.012 * uNightF;
   vec3 col = alb * (light + amb);

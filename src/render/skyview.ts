@@ -405,6 +405,18 @@ export class SkyView {
       perfectSky: settings.perfectSky,
     });
 
+    // Lunar eclipse: moonlight fades as the Moon enters Earth's shadow.
+    const shadow = this.earthShadow(astroTime, observer);
+    let moonDim = 1;
+    if (shadow) {
+      const sep = moonWorld.angleTo(shadow.dir);
+      const mr = moon.angularRadius * DEG;
+      const umbra = discOverlap(mr, shadow.umbra, sep);
+      const penumbra = discOverlap(mr, shadow.penumbra, sep) - umbra;
+      moonDim = Math.max(2e-4, 1 - umbra * 0.9998 - penumbra * 0.4);
+    }
+    sky.moonFlux *= moonDim;
+
     // Solar eclipse: dim the daylight by the fraction of the Sun covered.
     const moonSunSep = sunWorld.angleTo(moonWorld) * RAD;
     const obscuration = discOverlap(sun.angularRadius, moon.angularRadius, moonSunSep);
@@ -470,7 +482,6 @@ export class SkyView {
     this.planetPoints.end();
 
     // ---- Resolved discs.
-    const shadow = this.earthShadow(astroTime, observer);
     this.bodyRenderer.update(
       {
         states: bodies,
@@ -481,6 +492,8 @@ export class SkyView {
         nightVision: settings.nightVision,
         extinction: sky.extinction,
         eclipseObscuration: obscuration,
+        moonDim,
+        fov,
         shadow,
       },
       this.camera,

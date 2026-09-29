@@ -935,8 +935,11 @@ kbd {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  width: 74px;
+  width: 96px;
   flex: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .result .name {

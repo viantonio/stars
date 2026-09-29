@@ -15,6 +15,7 @@ export class Toolbar {
       panel('search', 'search', 'Search', '/'),
       panel('tonight', 'moon', 'Tonight', 'T'),
       panel('events', 'calendar', 'Sky events', 'Y'),
+      this.button('orrery', 'orbit', 'Solar System', 'O', () => app.toggleOrrery()),
       panel('layers', 'layers', 'Sky layers', ''),
       panel('location', 'pin', 'Location', ''),
       panel('settings', 'settings', 'Settings', ''),
@@ -33,6 +34,7 @@ export class Toolbar {
       for (const id of ['search', 'tonight', 'events', 'layers', 'location', 'settings'])
         this.buttons.get(id)?.classList.toggle('active', app.panels?.current === id);
       this.buttons.get('pointing')?.classList.toggle('active', app.pointing?.active ?? false);
+      this.buttons.get('orrery')?.classList.toggle('active', app.orreryVisible);
     };
     app.settings.onChange(sync);
     app.onFrame(sync);

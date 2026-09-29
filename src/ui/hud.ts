@@ -62,6 +62,9 @@ export class Hud {
     if (s.perfectSky) chips.push(h('span', { class: 'chip gold' }, 'Perfect sky'));
     this.statusEl.replaceChildren(...chips);
 
+    const showChips = s.showHud;
+    this.statusEl.style.display = showChips ? '' : 'none';
+    this.readout.style.display = showChips ? '' : 'none';
     const v = f.view;
     this.needle.style.transform = `rotate(${-v.az + 45}deg)`;
     const fovText = v.fov >= 10 ? `${v.fov.toFixed(0)}°` : v.fov >= 1 ? `${v.fov.toFixed(1)}°` : `${(v.fov * 60).toFixed(0)}′`;

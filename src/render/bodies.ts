@@ -49,6 +49,7 @@ const BODY_FRAG = /* glsl */ `
   uniform vec3 uShadowDir;    // world, antisolar direction
   uniform float uUmbra;       // angular radius, radians
   uniform float uPenumbra;
+  uniform float uBloodScale; // eyes see the umbra as dark while much of the Moon is lit
   // Saturn: ring shadow on the globe.
   uniform float uRingShadow;
   uniform mat3 uWorldToLocal;
@@ -122,7 +123,9 @@ const BODY_FRAG = /* glsl */ `
       float pen = clamp((uPenumbra - a) / max(uPenumbra - uUmbra, 1e-5), 0.0, 1.0);
       float umb = smoothstep(uUmbra + 0.0006, uUmbra - 0.0006, a);
       c *= 1.0 - pen * 0.55;
-      vec3 blood = vec3(0.55, 0.16, 0.05) * albedo * 0.10 * (0.6 + 0.8 * (a / uUmbra));
+      // Sunlight refracted through Earth's atmosphere: coppery, brighter near the umbra's edge.
+      float edge = clamp(a / uUmbra, 0.0, 1.0);
+      vec3 blood = vec3(0.75, 0.22, 0.07) * (0.35 + 0.65 * albedo) * (0.28 + 0.9 * edge * edge) * uBloodScale;
       c = mix(c, blood, umb);
     }
     c *= uBrightness * uExtinctionTint;
@@ -213,7 +216,7 @@ const GLOW_FRAG = /* glsl */ `
 `;
 
 /** Procedural ring profile for Saturn (radii in km, from Voyager/Cassini). */
-function makeSaturnRingTexture(): THREE.DataTexture {
+export function makeSaturnRingTexture(): THREE.DataTexture {
   const W = 1024;
   const R_IN = 66900;
   const R_OUT = 140300;
@@ -256,6 +259,9 @@ export interface BodyFrameParams {
   nightVision: boolean;
   extinction: number;
   eclipseObscuration: number;
+  /** Moonlight remaining during a lunar eclipse (1 = none eclipsed). */
+  moonDim: number;
+  fov: number;
   /** Earth's shadow geometry for lunar eclipses (world antisolar dir, radii in rad). */
   shadow: { dir: THREE.Vector3; umbra: number; penumbra: number } | null;
 }
@@ -301,6 +307,7 @@ export class BodyRenderer {
           uShadowDir: { value: new THREE.Vector3() },
           uUmbra: { value: 0 },
           uPenumbra: { value: 0 },
+          uBloodScale: { value: 1 },
           uRingShadow: { value: id === 'Saturn' ? 1 : 0 },
           uWorldToLocal: { value: new THREE.Matrix3() },
           uRingInner: { value: this.ringTex.userData.inner },
@@ -433,12 +440,14 @@ export class BodyRenderer {
       } else if (id === 'Moon') {
         // Bright against the night, washed out by day.
         u.uBrightness.value = THREE.MathUtils.lerp(2.3, 0.7, p.daylight);
-        u.uOcclusion.value = THREE.MathUtils.lerp(1, 0.08, p.daylight);
+        // Opaque against the Sun during a solar eclipse, translucent in daylight otherwise.
+        u.uOcclusion.value = p.eclipseObscuration > 0 ? 1 : THREE.MathUtils.lerp(1, 0.08, p.daylight);
         u.uEarthshine.value = 0.035 * Math.pow(1 - s.phase, 2) * (1 - p.daylight);
         if (p.shadow) {
           u.uShadowDir.value.copy(p.shadow.dir);
           u.uUmbra.value = p.shadow.umbra;
           u.uPenumbra.value = p.shadow.penumbra;
+          u.uBloodScale.value = 0.2 + 0.8 * (1 - THREE.MathUtils.smoothstep(p.moonDim, 0.01, 0.35));
         } else {
           u.uUmbra.value = 0;
         }
@@ -472,10 +481,11 @@ export class BodyRenderer {
         gu.uColor.value.set(id === 'Sun' ? 0xfff1d6 : 0xdfe6ff).multiply(tint);
         if (id === 'Sun') {
           const vis = 1 - p.eclipseObscuration;
-          gu.uIntensity.value = 1.4 * Math.pow(vis, 1.5);
+          // The aureole is broad; tone it down when zoomed in so the disc stays readable.
+          gu.uIntensity.value = 1.4 * Math.pow(vis, 1.5) * THREE.MathUtils.clamp(p.fov / 25, 0.15, 1);
           gu.uCorona.value = THREE.MathUtils.smoothstep(p.eclipseObscuration, 0.985, 1.0);
         } else {
-          gu.uIntensity.value = 0.22 * Math.pow(s.phase, 1.5) * (1 - p.daylight);
+          gu.uIntensity.value = 0.22 * Math.pow(s.phase, 1.5) * (1 - p.daylight) * Math.sqrt(p.moonDim);
         }
         glow.visible = alt > -3;
       }

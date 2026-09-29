@@ -49,14 +49,6 @@ export function drawMoonPhase(canvas: HTMLCanvasElement, phaseAngle: number, siz
   ctx.arc(c, c, r, -Math.PI / 2, Math.PI / 2, side < 0);
   ctx.ellipse(c, c, Math.abs(k) * r, r, 0, Math.PI / 2, -Math.PI / 2, (k > 0) === (side > 0));
   ctx.fill();
-  // Subtle maria.
-  ctx.globalCompositeOperation = 'source-atop';
-  ctx.fillStyle = 'rgba(120,115,105,0.28)';
-  for (const [x, y, rr] of [[-0.25, -0.2, 0.22], [0.1, -0.3, 0.16], [0.2, 0.05, 0.2], [-0.1, 0.25, 0.14]]) {
-    ctx.beginPath();
-    ctx.arc(c + x * r, c + y * r, rr * r, 0, Math.PI * 2);
-    ctx.fill();
-  }
   ctx.restore();
 }
 
@@ -297,6 +289,10 @@ export function renderTonight(app: App): PanelView {
     title: 'Tonight',
     subtitle: `${site.name} · ${site.region}`,
     body,
+    // Rebuild when time travel moves us to a different night.
+    update: () => {
+      if (app.tonight() !== t && app.panels.current === 'tonight') app.panels.open('tonight');
+    },
   };
 }
 
