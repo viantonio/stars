@@ -6,8 +6,9 @@ import { renderSearch } from './search';
 import { renderLayers, renderSettings, renderLocation } from './settingsPanels';
 import { renderMoments } from './moments';
 import { renderAsAbove } from './asAbove';
+import { renderLearn } from '../learn/learn';
 
-export type PanelId = 'search' | 'tonight' | 'events' | 'layers' | 'location' | 'settings' | 'moments' | 'asabove';
+export type PanelId = 'search' | 'tonight' | 'events' | 'layers' | 'location' | 'settings' | 'moments' | 'asabove' | 'learn';
 
 export interface PanelView {
   title: string;
@@ -29,6 +30,7 @@ const RENDERERS: Record<PanelId, (app: App) => PanelView> = {
   settings: renderSettings,
   moments: renderMoments,
   asabove: renderAsAbove,
+  learn: renderLearn,
 };
 
 /** A single slide-in panel that hosts one view at a time. */

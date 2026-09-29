@@ -78,4 +78,8 @@ export interface Chart {
   planetaryHour: PlanetaryHour | null;
   /** True obliquity of the ecliptic used, degrees. */
   obliquity: number;
+  /** Which ayanamsa the chart was computed with (used for sidereal transits). */
+  ayanamsaKind?: Ayanamsa;
+  /** Set when the requested house system is undefined at this latitude (Placidus above the polar circles). */
+  housesFallback?: 'porphyry';
 }

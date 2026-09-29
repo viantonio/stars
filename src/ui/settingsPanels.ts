@@ -80,6 +80,12 @@ export function renderLayers(app: App): PanelView {
       ['twinkle', 'Twinkling', null],
     ]),
     h('p', { class: 'note' }, '“Perfect sky” removes light pollution and haze so you can see what your sky would look like with no city lights at all. By day, turn off “Atmosphere” to reveal the stars and planets that are always there behind the sunlight.'),
+    h('div', { class: 'section-title' }, 'As Above (tradition)'),
+    toggles(app, [
+      ['zodiacBand', 'Zodiac band', 'hexagram'],
+      ['planetaryHour', 'Planetary hour', null],
+    ]),
+    h('p', { class: 'note' }, 'The zodiac band marks the twelve astrological signs along the Sun’s path. Compare them with the constellation figures beneath: in the tropical zodiac the signs have drifted about 24° from the stars they were named after. Choose tropical or sidereal in the As Above panel.'),
     h('div', { class: 'section-title' }, 'Guides'),
     toggles(app, [
       ['gridAltAz', 'Alt-az grid', null, 'Z'],

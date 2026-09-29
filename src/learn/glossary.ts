@@ -40,6 +40,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   { id: 'elongation', term: 'Elongation', def: 'The angle between a planet and the Sun as seen from Earth. Mercury and Venus never stray far; their greatest elongations are the best times to see them.' },
   { id: 'retrograde', term: 'Retrograde', aliases: ['retrograde motion'], def: 'The apparent backward (westward) drift of a planet against the stars, seen when Earth overtakes it (or it overtakes us). The planet never really reverses.' },
   { id: 'synodic-month', term: 'Synodic month', aliases: ['lunar month'], def: 'The 29.5 days from one new Moon to the next — a little longer than the Moon’s 27.3-day orbit, because Earth has moved around the Sun meanwhile.' },
+  { id: 'waxing', term: 'Waxing & waning', aliases: ['waxing', 'waning'], def: 'Waxing: the lit part of the Moon growing night by night, from new Moon to full. Waning: shrinking again, from full back to new.' },
   { id: 'terminator', term: 'Terminator', def: 'The line between day and night on the Moon or a planet. Craters near it cast long shadows and look most dramatic.' },
   { id: 'libration', term: 'Libration', def: 'A slow apparent rocking of the Moon, caused by its tilted, elliptical orbit. Over time it lets us see about 59% of the lunar surface rather than 50%.' },
   { id: 'tidal-locking', term: 'Tidal locking', aliases: ['tidally locked'], def: 'When a moon’s spin has been slowed by tides until it turns once per orbit, keeping one face towards its planet.' },
@@ -50,6 +51,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   { id: 'rayleigh', term: 'Rayleigh scattering', aliases: ['scattering', 'scattered'], def: 'Scattering of light by air molecules, much stronger for blue than red. It makes the daytime sky blue and bright and sunsets red.' },
   { id: 'twilight', term: 'Twilight', def: 'The glow after sunset and before sunrise. Civil twilight: Sun 0–6° below the horizon (bright enough to read). Nautical: 6–12° (horizon fades, bright stars out). Astronomical: 12–18° (last trace of glow). Below 18° the sky is fully dark.' },
   { id: 'dark-adaptation', term: 'Dark adaptation', aliases: ['dark-adapt', 'dark-adapted'], def: 'Your eyes’ slow switch to night vision: pupils widen in seconds, but the retina’s rod cells need 20–30 minutes of darkness to reach full sensitivity. White light resets it; dim red light mostly does not.' },
+  { id: 'averted-vision', term: 'Averted vision', def: 'Looking slightly to one side of a faint object so its light falls on the more sensitive rod cells away from the centre of your retina. Faint galaxies and nebulae can appear twice as bright.' },
   { id: 'light-pollution', term: 'Light pollution', def: 'Artificial light scattered by the atmosphere into a glowing sky, drowning faint stars. It is measured by the Bortle scale.' },
   { id: 'bortle', term: 'Bortle scale', aliases: ['Bortle'], def: 'A 1–9 rating of night-sky darkness by John Bortle (2001). Class 1–2: pristine, the Milky Way casts shadows. Class 4: rural/suburban. Class 8–9: city, only bright stars.' },
   { id: 'milky-way', term: 'Milky Way', def: 'Our galaxy — about 100–200 billion stars in a flat disc ~100,000 light-years across. From inside the disc we see it edge-on as a glowing band around the sky.' },
@@ -77,15 +79,19 @@ let uid = 0;
 /**
  * Converts plain text to nodes, turning the first mention of each glossary
  * term (per `seen` set) into a button with an accessible definition.
- * Supports **bold** for emphasis.
+ * Supports **bold** and *italic* for emphasis.
  */
 export function glossify(text: string, seen: Set<string> = new Set()): DocumentFragment {
   const frag = document.createDocumentFragment();
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
   for (const part of parts) {
     if (!part) continue;
-    if (part.startsWith('**') && part.endsWith('**')) {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
       frag.append(h('strong', {}, glossify(part.slice(2, -2), seen)));
+      continue;
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      frag.append(h('em', {}, part.slice(1, -1)));
       continue;
     }
     let last = 0;
@@ -116,7 +122,8 @@ export function termButton(label: string, t: GlossaryTerm): HTMLElement {
   btn.addEventListener('blur', () => hidePop());
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (current === btn) hidePop();
+    // A tap focuses (showing the popover) and then clicks: don't let the click undo it.
+    if (current === btn && performance.now() - shownAt > 400) hidePop();
     else showPop(btn, t);
   });
   btn.addEventListener('keydown', (e) => {
@@ -133,6 +140,7 @@ export function termButton(label: string, t: GlossaryTerm): HTMLElement {
 let pop: HTMLElement | null = null;
 let current: HTMLElement | null = null;
 let hideTimer = 0;
+let shownAt = 0;
 
 function popEl(): HTMLElement {
   if (pop) return pop;
@@ -151,6 +159,7 @@ function popEl(): HTMLElement {
 function showPop(btn: HTMLElement, t: GlossaryTerm): void {
   window.clearTimeout(hideTimer);
   const el = popEl();
+  if (current !== btn) shownAt = performance.now();
   current?.setAttribute('aria-expanded', 'false');
   current = btn;
   btn.setAttribute('aria-expanded', 'true');

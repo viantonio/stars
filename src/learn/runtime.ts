@@ -126,11 +126,15 @@ export class LessonContext {
     if (!this.dead) this.app.time.setRate(rate);
   }
 
-  /** Smoothly turns the camera to an altitude/azimuth (degrees). */
+  /**
+   * Smoothly turns the camera so that altitude/azimuth (degrees) sits in the
+   * middle of the sky left visible above the lesson card.
+   */
   look(alt: number, az: number, fov?: number, ms = 1600): void {
     if (this.dead) return;
+    const f = fov ?? this.app.view.controls.fov;
     this.app.view.controls.trackTarget = null;
-    this.app.view.controls.flyTo(altAzToWorld(alt, az), fov, ms);
+    this.app.view.controls.flyTo(altAzToWorld(Math.min(89, alt - f * liftFraction()), az), fov, ms);
   }
 
   /** Current world direction of an object (after the frame has caught up). */
@@ -143,17 +147,39 @@ export class LessonContext {
     return d ? worldToAltAz(d) : null;
   }
 
+  /**
+   * Flies to a world direction. `lift` (degrees, default a fifth of the
+   * field) places the target above the centre so the lesson card, which
+   * covers the lower part of the screen, does not hide it.
+   */
+  flyToDir(d: THREE.Vector3, fov?: number, lift?: number): void {
+    if (this.dead) return;
+    const controls = this.app.view.controls;
+    const f = fov ?? controls.fov;
+    const l = lift ?? f * liftFraction();
+    const { alt, az } = worldToAltAz(d);
+    const camAlt = Math.min(89, Math.max(alt - l, Math.min(alt, -2)));
+    controls.trackTarget = null;
+    controls.flyTo(altAzToWorld(camAlt, az), fov);
+  }
+
   /** Flies to an object and marks it with the selection reticle (without opening its card). */
-  flyTo(o: SkyObject, fov?: number, opts: { mark?: boolean; offsetAlt?: number } = {}): void {
+  flyTo(o: SkyObject, fov?: number, opts: { mark?: boolean; lift?: number } = {}): void {
     if (this.dead) return;
     const d = this.dir(o);
     if (!d) return;
-    this.app.view.controls.trackTarget = null;
-    if (opts.offsetAlt) {
-      const { alt, az } = worldToAltAz(d);
-      this.app.view.controls.flyTo(altAzToWorld(alt + opts.offsetAlt, az), fov);
-    } else this.app.view.controls.flyTo(d, fov);
+    this.flyToDir(d, fov, opts.lift);
     if (opts.mark !== false) this.mark(o);
+  }
+
+  /** Flies to the middle of several objects. */
+  flyToGroup(objs: (SkyObject | null)[], fov?: number, lift?: number): void {
+    const sum = new THREE.Vector3();
+    for (const o of objs) {
+      const d = o && this.dir(o);
+      if (d) sum.add(d);
+    }
+    if (sum.lengthSq() > 0) this.flyToDir(sum.normalize(), fov, lift);
   }
 
   /** Shows the selection reticle on an object (null clears it). */
@@ -244,6 +270,18 @@ export class LessonContext {
     }
     this.guide(pts);
   }
+}
+
+/**
+ * How far above the screen centre (as a fraction of the field of view) a
+ * target should sit so the lesson card does not cover it.
+ */
+function liftFraction(): number {
+  const card = document.querySelector('.learn-card');
+  if (!card || card.classList.contains('minimised')) return 0.05;
+  if (!window.matchMedia('(max-width: 760px)').matches) return 0.16;
+  const covered = card.getBoundingClientRect().height / window.innerHeight;
+  return Math.min(0.3, Math.max(0.1, covered / 2));
 }
 
 function slerpPoints(a: THREE.Vector3, b: THREE.Vector3, n: number, skipFirst: boolean): THREE.Vector3[] {

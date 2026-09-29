@@ -1,0 +1,420 @@
+/* "As Above" panel: chart wheel, sky notes, journal, Tree of Life, letters. */
+
+.as-tabs {
+  flex-wrap: wrap;
+}
+
+.as-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.as-opts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.as-opts .seg {
+  flex: 1 1 auto;
+}
+
+.tradition-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgba(181, 140, 255, 0.08);
+  border: 1px solid rgba(181, 140, 255, 0.22);
+  color: #d4c2f5;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.tradition-note svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.wheel-wrap,
+.tree-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0;
+}
+
+.chart-wheel text {
+  font-family: 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', var(--font);
+}
+
+.wheel-planet {
+  cursor: pointer;
+}
+
+.wheel-planet:hover circle,
+.wheel-planet:focus-visible circle {
+  stroke: var(--gold);
+}
+
+.wheel-legend {
+  text-align: center;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.big-three {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.big-three .card + .card {
+  margin-top: 0;
+}
+
+.b3 {
+  text-align: center;
+  padding: 10px 6px;
+}
+
+.b3-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.b3-sign {
+  font-size: 26px;
+  line-height: 1.3;
+}
+
+.b3-name {
+  font-weight: 650;
+}
+
+.big-glyph {
+  font-size: 19px;
+  width: 24px;
+  text-align: center;
+  color: var(--gold);
+}
+
+.placements {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.placement {
+  display: grid;
+  grid-template-columns: 24px 1fr auto 40px;
+  grid-template-areas: 'g n p h' 'g s s s';
+  align-items: center;
+  column-gap: 8px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  text-align: left;
+  font-size: 13px;
+}
+
+button.placement:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pl-glyph {
+  grid-area: g;
+  font-size: 17px;
+  color: var(--gold);
+  text-align: center;
+}
+
+.pl-name {
+  grid-area: n;
+  font-weight: 600;
+}
+
+.pl-pos {
+  grid-area: p;
+}
+
+.pl-house {
+  grid-area: h;
+  text-align: right;
+  font-size: 11.5px;
+}
+
+.pl-sky {
+  grid-area: s;
+  font-size: 11px;
+}
+
+.retro {
+  color: #ff9a9a;
+  margin-left: 3px;
+  font-size: 10px;
+}
+
+.aspects {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.aspect {
+  display: grid;
+  grid-template-columns: 18px 18px 18px 1fr auto;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  border-left: 2px solid transparent;
+}
+
+.aspect.harmonious {
+  border-left-color: #6fe3a1;
+}
+
+.aspect.challenging {
+  border-left-color: #ff7a7a;
+}
+
+.aspect.neutral {
+  border-left-color: #ffd479;
+}
+
+.asp-glyph {
+  color: var(--muted);
+  text-align: center;
+}
+
+.asp-text {
+  color: var(--text-2);
+  margin-left: 6px;
+}
+
+.warn-note {
+  color: var(--warn) !important;
+}
+
+.lit-note {
+  color: var(--gold) !important;
+}
+
+.sky-note .sn-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.sky-note .note {
+  margin: 8px 0;
+}
+
+.small-btn {
+  height: 32px;
+  padding: 0 11px;
+  font-size: 12px;
+}
+
+.journal-box {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.journal-entry {
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: rgba(255, 207, 122, 0.06);
+  border-left: 2px solid var(--gold);
+}
+
+.je-text {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 13px;
+  margin: 4px 0;
+}
+
+button.link {
+  color: var(--muted);
+  text-decoration: underline;
+  font-size: 12px;
+}
+
+.hebrew {
+  font-family: 'Noto Serif Hebrew', 'SBL Hebrew', 'Ezra SIL', 'Times New Roman', serif;
+  margin-left: 6px;
+  color: var(--gold);
+  font-weight: 500;
+}
+
+.tree-svg {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+}
+
+.tree-path {
+  cursor: pointer;
+}
+
+.tp-hit {
+  stroke: transparent;
+  stroke-width: 12;
+}
+
+.tp-line {
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 2;
+}
+
+.tree-path.lit .tp-line {
+  stroke: var(--gold);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px rgba(255, 207, 122, 0.7));
+}
+
+.tp-badge {
+  fill: #0b1020;
+  stroke: rgba(255, 255, 255, 0.2);
+}
+
+.tree-path.lit .tp-badge {
+  stroke: var(--gold);
+}
+
+.tp-letter {
+  fill: #e8dcc0;
+  font-size: 10.5px;
+  font-family: 'Noto Serif Hebrew', 'Times New Roman', serif;
+}
+
+.tree-path:hover .tp-line,
+.tree-path:focus-visible .tp-line {
+  stroke: #fff;
+}
+
+.daat {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-dasharray: 3 3;
+}
+
+.sephira {
+  cursor: pointer;
+}
+
+.sephira circle {
+  fill: #121831;
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 1.5;
+}
+
+.sephira.lit circle {
+  fill: #3a2a0c;
+  stroke: var(--gold);
+  filter: drop-shadow(0 0 8px rgba(255, 207, 122, 0.65));
+}
+
+.sephira:hover circle,
+.sephira:focus-visible circle {
+  stroke: #fff;
+}
+
+.seph-num {
+  fill: var(--gold);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.seph-name {
+  fill: #e9eef6;
+  font-size: 8px;
+  font-weight: 600;
+}
+
+blockquote.emerald {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(60, 180, 120, 0.12), rgba(20, 60, 40, 0.05));
+  border: 1px solid rgba(111, 227, 161, 0.25);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #d8efe2;
+}
+
+blockquote.emerald p {
+  margin: 0 0 6px;
+}
+
+blockquote.emerald cite {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font);
+}
+
+.signature {
+  text-align: center;
+}
+
+.sig-word {
+  font-size: 40px;
+  margin: 0 0 6px;
+  letter-spacing: 0.1em;
+}
+
+.sig-parts {
+  font-size: 12.5px;
+  color: var(--text-2);
+  display: grid;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+
+.letters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+}
+
+.letter-card {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line);
+}
+
+.letter-card.lit {
+  border-color: rgba(255, 207, 122, 0.45);
+  background: rgba(255, 207, 122, 0.07);
+}
+
+.lc-glyph {
+  font-size: 28px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.lc-name {
+  font-weight: 650;
+  font-size: 12.5px;
+}
+
+.lc-attr {
+  font-size: 11px;
+  color: var(--violet);
+  margin-top: 2px;
+}

@@ -1,0 +1,629 @@
+/* ------------------------------------------------------------ Sky School */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- Catalogue panel */
+
+.learn-intro p {
+  margin: 0 0 12px;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.gloss-sample {
+  border-bottom: 1px dashed rgba(255, 207, 122, 0.7);
+  color: var(--text);
+}
+
+.learn-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.learn-progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.learn-progress-bar > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold-2), var(--gold));
+  box-shadow: 0 0 10px rgba(255, 207, 122, 0.5);
+  min-width: 2px;
+}
+
+.learn-now {
+  margin-top: 8px;
+  border-color: rgba(255, 207, 122, 0.35);
+  background: rgba(255, 207, 122, 0.06);
+}
+
+.learn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.learn-lesson {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  padding: 12px 12px 12px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--line);
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.learn-lesson:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--line-strong);
+}
+
+.learn-lesson:active {
+  transform: scale(0.99);
+}
+
+.learn-lesson-icon {
+  position: relative;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  background: radial-gradient(circle at 30% 25%, rgba(255, 207, 122, 0.22), rgba(255, 207, 122, 0.05) 70%);
+  border: 1px solid rgba(255, 207, 122, 0.2);
+}
+
+.learn-num {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #0d1220;
+  border: 1px solid var(--line-strong);
+  color: var(--text-2);
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.learn-lesson-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.learn-lesson-title {
+  font-weight: 650;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.learn-lesson-blurb {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.learn-lesson-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.learn-lesson-state {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 8px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.learn-lesson.complete .learn-lesson-state {
+  color: #0c1a12;
+  background: var(--good);
+  border-color: transparent;
+  box-shadow: 0 0 12px rgba(111, 227, 161, 0.4);
+}
+
+.learn-lesson.complete .learn-lesson-icon {
+  color: var(--good);
+  border-color: rgba(111, 227, 161, 0.3);
+  background: radial-gradient(circle at 30% 25%, rgba(111, 227, 161, 0.18), rgba(111, 227, 161, 0.04) 70%);
+}
+
+.learn-reset {
+  display: block;
+  margin: 16px auto 4px;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.learn-reset:hover {
+  color: var(--text-2);
+}
+
+.learn-glossary {
+  margin: 12px 0 0;
+}
+
+.learn-glossary dt {
+  font-weight: 650;
+  color: var(--gold);
+  font-size: 13.5px;
+  margin-top: 14px;
+}
+
+.learn-glossary dt:first-child {
+  margin-top: 4px;
+}
+
+.learn-glossary dd {
+  margin: 3px 0 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.55;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---- Lesson card (player) */
+
+.learn-card {
+  position: absolute;
+  left: 50%;
+  bottom: var(--learn-bottom, calc(150px + var(--safe-bottom)));
+  transform: translateX(-50%);
+  width: min(600px, calc(100vw - 28px));
+  max-height: min(48vh, 440px);
+  z-index: 35;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(8, 11, 20, 0.8);
+  animation: learn-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes learn-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(14px);
+  }
+}
+
+.learn-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(90% 120% at 0% 0%, rgba(255, 207, 122, 0.1), transparent 55%);
+  pointer-events: none;
+}
+
+.lc-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 10px 8px 16px;
+}
+
+.lc-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  background: rgba(255, 207, 122, 0.1);
+  border: 1px solid rgba(255, 207, 122, 0.22);
+}
+
+.lc-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.lc-lesson {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-kicker {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+.lc-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 207, 122, 0.2);
+  border-top-color: var(--gold);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.learn-card.busy .lc-spinner {
+  opacity: 1;
+  animation: learn-spin 0.9s linear infinite;
+}
+
+@keyframes learn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lc-min svg {
+  transition: transform 0.2s;
+}
+
+.learn-card.minimised .lc-min svg {
+  transform: rotate(180deg);
+}
+
+.lc-body {
+  position: relative;
+  overflow-y: auto;
+  padding: 2px 18px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.learn-card.minimised .lc-body {
+  display: none;
+}
+
+.lc-title {
+  margin: 2px 0 6px;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  outline: none;
+}
+
+.lc-text p {
+  margin: 0 0 9px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.lc-text strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.lc-text em {
+  font-style: italic;
+}
+
+.lc-skel {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+  background-size: 200% 100%;
+  animation: learn-shimmer 1.3s linear infinite;
+}
+
+.lc-skel.short {
+  width: 60%;
+}
+
+@keyframes learn-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.lc-reflection {
+  margin: 4px 0 10px;
+  padding: 10px 14px 11px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(181, 140, 255, 0.1), rgba(255, 207, 122, 0.07));
+  border: 1px solid rgba(255, 207, 122, 0.2);
+  position: relative;
+}
+
+.lc-reflection[hidden] {
+  display: none;
+}
+
+.lc-ref-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.lc-reflection p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  font-style: italic;
+  color: #efe6d4;
+}
+
+.lc-foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.lc-foot .btn {
+  height: 36px;
+  padding: 0 12px;
+  gap: 4px;
+}
+
+.lc-back svg {
+  transform: rotate(180deg);
+}
+
+.lc-foot .btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.lc-next {
+  min-width: 92px;
+  padding-left: 16px !important;
+}
+
+.lc-dots {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.lc-dot {
+  width: 20px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.lc-dot::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: width 0.2s, background 0.2s;
+}
+
+.lc-dot.done::after {
+  background: rgba(255, 207, 122, 0.45);
+}
+
+.lc-dot.on::after {
+  width: 18px;
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(255, 207, 122, 0.6);
+}
+
+.lc-dot:hover::after {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.lc-dot.on {
+  width: 28px;
+}
+
+/* ---- Glossary terms and popover */
+
+.gloss-wrap {
+  display: inline;
+}
+
+.gloss-term {
+  display: inline;
+  font: inherit;
+  color: var(--text);
+  font-weight: 550;
+  border-bottom: 1px dashed rgba(255, 207, 122, 0.7);
+  border-radius: 2px;
+  line-height: inherit;
+  cursor: help;
+  transition: color 0.15s, background 0.15s;
+}
+
+.gloss-term:hover,
+.gloss-term[aria-expanded='true'] {
+  color: var(--gold);
+  background: rgba(255, 207, 122, 0.08);
+}
+
+.gloss-pop {
+  position: fixed;
+  z-index: 150;
+  left: 0;
+  top: 0;
+  padding: 10px 13px 11px;
+  border-radius: 12px;
+  background: rgba(10, 14, 25, 0.96);
+  border: 1px solid rgba(255, 207, 122, 0.28);
+  box-shadow: var(--shadow);
+  font-family: var(--font);
+  pointer-events: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s, visibility 0s linear 0.15s;
+}
+
+.gloss-pop.show {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.gloss-pop-term {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 3px;
+}
+
+.gloss-pop-def {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+/* ---- Spotlight on UI the lesson talks about */
+
+.learn-spotlight {
+  animation: learn-glow 1.6s ease-in-out infinite;
+  z-index: 36 !important;
+}
+
+@keyframes learn-glow {
+  0%,
+  100% {
+    box-shadow: var(--shadow), 0 0 0 2px rgba(255, 207, 122, 0.55), 0 0 18px rgba(255, 207, 122, 0.25);
+  }
+  50% {
+    box-shadow: var(--shadow), 0 0 0 2px rgba(255, 207, 122, 0.95), 0 0 30px rgba(255, 207, 122, 0.5);
+  }
+}
+
+.tool.learn-spotlight {
+  color: var(--gold);
+  background: rgba(255, 207, 122, 0.16);
+}
+
+/* Toasts move to the top so they never cover the lesson card. */
+body.learn-playing .toast-host {
+  bottom: auto;
+  top: calc(84px + var(--safe-top));
+}
+
+body.hide-ui .learn-card {
+  opacity: 0.15;
+}
+
+/* ---- Phone: the lesson card is a bottom sheet */
+
+@media (max-width: 760px) {
+  .learn-card {
+    left: 0;
+    right: 0;
+    bottom: var(--learn-bottom, 0px);
+    width: 100%;
+    transform: none;
+    max-height: 52vh;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: var(--safe-bottom);
+    animation-name: learn-sheet-in;
+  }
+
+  .learn-card.lifted {
+    border-radius: 22px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: 40vh;
+  }
+
+  @keyframes learn-sheet-in {
+    from {
+      transform: translateY(40px);
+      opacity: 0;
+    }
+  }
+
+  .lc-title {
+    font-size: 16.5px;
+  }
+
+  .lc-text p,
+  .lc-reflection p {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .lc-foot .btn span {
+    display: inline;
+  }
+
+  /* The sheet replaces the bottom controls, unless a step points at them. */
+  body.learn-playing:not(.learn-spot) .toolbar,
+  body.learn-playing:not(.learn-spot) .timebar {
+    visibility: hidden;
+  }
+
+  body.learn-playing .toast-host {
+    top: calc(76px + var(--safe-top));
+  }
+}

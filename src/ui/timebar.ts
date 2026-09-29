@@ -25,7 +25,7 @@ export class TimeBar {
   private unitSelect: HTMLSelectElement;
   private jog = h('div', { class: 'jog', role: 'slider', tabindex: '0', 'aria-label': 'Spin time: drag left for the past, right for the future', 'aria-valuetext': 'stopped' });
   private jogKnob = h('div', { class: 'jog-knob' });
-  private jogLabel = h('div', { class: 'jog-label' }, '◀ past · drag to spin time · future ▶');
+  private jogLabel = h('div', { class: 'jog-label' }, h('span', {}, '◀ past'), h('span', {}, 'drag to spin time'), h('span', {}, 'future ▶'));
   private jogRestoreRate = 0;
   private jogging = false;
 

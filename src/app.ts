@@ -422,6 +422,9 @@ export class App {
         case 'y':
           this.panels.toggle('events');
           break;
+        case 'j':
+          this.panels.toggle('learn');
+          break;
         case '?':
           showHelp(this);
           break;

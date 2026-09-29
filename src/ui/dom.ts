@@ -65,6 +65,7 @@ export const ICONS = {
   meteor: '<path d="M4 20 14 10M8 20l9-9M4 16l9-9M18 4l2 2-3 3-2-2 3-3Z"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17v.5"/>',
   orbit: '<circle cx="12" cy="12" r="2.5"/><ellipse cx="12" cy="12" rx="10" ry="4.5"/><circle cx="20.5" cy="10" r="1.2" fill="currentColor"/>',
+  book: '<path d="M12 6.5C9.5 4.8 6 4.3 2.5 5v13.5c3.5-.7 7 0 9.5 1.7 2.5-1.7 6-2.4 9.5-1.7V5c-3.5-.7-7-.2-9.5 1.5Z"/><path d="M12 6.5v13.7"/>',
 } as const;
 
 export function fmtTime(d: Date | null | undefined, tz: string, opts: Intl.DateTimeFormatOptions = {}): string {

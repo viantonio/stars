@@ -1,6 +1,9 @@
 import type { App } from '../app';
 import type { FrameInfo } from '../render/skyview';
 import { h, icon, compass16, fmtDate } from './dom';
+import { planetaryHour } from '../esoteric/astrology';
+import { POINT_INFO } from '../esoteric/correspondences';
+import type { PlanetaryHour } from '../esoteric/types';
 
 function skyStateLabel(sunAlt: number): { text: string; cls: string } {
   if (sunAlt > 0) return { text: 'Daytime', cls: 'gold' };
@@ -41,6 +44,19 @@ export class Hud {
     app.onFrame((f) => this.update(f));
   }
 
+  private hourKey = '';
+  private hour: PlanetaryHour | null = null;
+
+  /** Planetary hour, recomputed at most once per simulated minute. */
+  private hourOf(f: FrameInfo): PlanetaryHour | null {
+    const key = `${f.site.lat}:${f.site.lon}:${Math.floor(f.time.getTime() / 60000)}`;
+    if (key !== this.hourKey) {
+      this.hourKey = key;
+      this.hour = planetaryHour(f.time, f.site.lat, f.site.lon);
+    }
+    return this.hour;
+  }
+
   private update(f: FrameInfo): void {
     const tz = f.site.timeZone;
     const parts = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: tz }).formatToParts(f.time);
@@ -60,6 +76,10 @@ export class Hud {
     const s = this.app.settings.get();
     chips.push(h('span', { class: 'chip', title: 'Naked-eye limiting magnitude at the zenith' }, `Limit mag ${f.sky.limitingMag.toFixed(1)}`));
     if (s.perfectSky) chips.push(h('span', { class: 'chip gold' }, 'Perfect sky'));
+    if (s.planetaryHour) {
+      const ph = this.hourOf(f);
+      if (ph) chips.push(h('span', { class: 'chip violet', title: `Traditional planetary hour — day of ${ph.dayRuler}. Tap for the As Above panel.`, onclick: () => this.app.panels.open('asabove') }, `${POINT_INFO[ph.ruler].glyph} Hour of ${ph.ruler}`));
+    }
     this.statusEl.replaceChildren(...chips);
 
     const showChips = s.showHud;
