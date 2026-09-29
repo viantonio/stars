@@ -44,6 +44,10 @@ export class InfoCard {
     }
   }
 
+  get isOpen(): boolean {
+    return !!this.obj;
+  }
+
   refreshSoon(): void {
     this.dirty = true;
   }

@@ -82,11 +82,11 @@ export const POINT_VERT = /* glsl */ `
     gl_Position = projectionMatrix * viewMatrix * vec4(d * 1000.0, 1.0);
 
     // Size and brightness grow logarithmically with brightness above the limit.
-    float core = 2.4 + 0.72 * b + 0.05 * b * b;
-    vHalo = clamp((b - 4.0) / 6.0, 0.0, 1.0);
+    float core = 2.9 + 0.85 * b + 0.06 * b * b;
+    vHalo = clamp((b - 3.2) / 5.5, 0.0, 1.0);
     float size = core * (1.0 + vHalo * 3.2);
     gl_PointSize = size * uSize * uPixelRatio;
-    vAlpha = smoothstep(-0.15, 0.9, b) * clamp(0.62 + b * 0.12, 0.0, 1.3);
+    vAlpha = smoothstep(-0.2, 0.7, b) * clamp(0.85 + b * 0.14, 0.0, 1.6);
     // Stars fade when the sky itself is bright (daylight contrast).
     vAlpha *= 1.0 - smoothstep(0.25, 0.7, uSkyDisplay) * 0.6;
 
@@ -107,7 +107,7 @@ export const POINT_FRAG = /* glsl */ `
     if (r2 > 1.0) discard;
     // Core scaled to the inner part of the sprite when a halo is present.
     float k = 1.0 + vHalo * 3.2;
-    float core = exp(-r2 * k * k * 3.2);
+    float core = exp(-r2 * k * k * 2.6);
     float halo = vHalo * (exp(-r2 * 9.0) * 0.28 + (1.0 - sqrt(r2)) * 0.05);
     // Faint diffraction-like spikes for the very brightest stars.
     float spikes = vHalo * vHalo * 0.22 * (exp(-abs(p.x) * 40.0) + exp(-abs(p.y) * 40.0)) * (1.0 - sqrt(r2));

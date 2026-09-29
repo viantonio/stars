@@ -28,6 +28,8 @@ export class TimeBar {
   private jogLabel = h('div', { class: 'jog-label' }, h('span', {}, '◀ past'), h('span', {}, 'drag to spin time'), h('span', {}, 'future ▶'));
   private jogRestoreRate = 0;
   private jogging = false;
+  private datePop: HTMLElement;
+  private dateBtn: HTMLButtonElement;
 
   constructor(private app: App) {
     const t = app.time;
@@ -39,6 +41,15 @@ export class TimeBar {
       ...STEP_UNITS.map((u) => h('option', { value: u.id, selected: u.id === app.settings.get().stepUnit }, u.label)),
     ) as HTMLSelectElement;
     this.unitSelect.addEventListener('change', () => app.settings.set({ stepUnit: this.unitSelect.value }));
+    // Date & time live in a small pop-up so the bar never overflows.
+    this.datePop = h(
+      'div',
+      { class: 'tb-datepop glass', role: 'dialog', 'aria-label': 'Go to a date and time' },
+      h('label', {}, 'Date', this.dateInput),
+      h('label', {}, 'Time', this.timeInput),
+      h('div', { class: 'btn-row' }, h('button', { class: 'btn primary small-btn', onclick: () => (this.applyInputs(), this.toggleDatePop(false)) }, 'Go'), h('button', { class: 'btn small-btn', onclick: () => this.toggleDatePop(false) }, 'Close')),
+    );
+    this.dateBtn = h('button', { class: 'tb-btn', title: 'Go to a date and time', 'aria-label': 'Go to a date and time', 'aria-expanded': 'false', onclick: () => this.toggleDatePop() }, icon('calendar', 18));
     const bar = h(
       'div',
       { class: 'timebar glass' },
@@ -49,16 +60,17 @@ export class TimeBar {
         this.unitSelect,
         h('button', { class: 'tb-btn', title: 'Step forward ( . )', 'aria-label': 'Step forward', onclick: () => this.step(1) }, icon('stepForward', 18)),
         h('div', { class: 'tb-sep' }),
-        h('button', { class: 'tb-btn', title: 'Slower / reverse ([)', 'aria-label': 'Slower', onclick: () => t.stepRate(-1) }, icon('back', 18)),
+        h('button', { class: 'tb-btn tb-speed', title: 'Slower / reverse ([)', 'aria-label': 'Slower', onclick: () => t.stepRate(-1) }, icon('back', 18)),
         this.playBtn,
-        h('button', { class: 'tb-btn', title: 'Faster (])', 'aria-label': 'Faster', onclick: () => t.stepRate(1) }, icon('forward', 18)),
+        h('button', { class: 'tb-btn tb-speed', title: 'Faster (])', 'aria-label': 'Faster', onclick: () => t.stepRate(1) }, icon('forward', 18)),
         this.rateEl,
         h('div', { class: 'tb-spacer' }),
-        h('div', { class: 'tb-datetime' }, this.dateInput, this.timeInput),
+        this.dateBtn,
         this.nowBtn,
       ),
       this.jog,
       this.strip,
+      this.datePop,
     );
     this.strip.append(this.stripCanvas, this.marker);
     this.jog.append(h('div', { class: 'jog-ticks' }), this.jogLabel, this.jogKnob);
@@ -70,9 +82,10 @@ export class TimeBar {
     }, { passive: false });
     app.root.append(bar);
 
-    const apply = () => this.applyInputs();
-    this.dateInput.addEventListener('change', apply);
-    this.timeInput.addEventListener('change', apply);
+    for (const input of [this.dateInput, this.timeInput])
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') (this.applyInputs(), this.toggleDatePop(false));
+      });
 
     this.strip.addEventListener('pointerdown', (e) => {
       this.scrubbing = true;
@@ -112,6 +125,23 @@ export class TimeBar {
     const r = this.strip.getBoundingClientRect();
     const f = Math.min(0.9999, Math.max(0, (clientX - r.left) / r.width));
     this.app.time.setTime(this.stripStart + f * 86400e3);
+  }
+
+  /** Open or close the date/time pop-up. */
+  toggleDatePop(open = !this.datePop.classList.contains('open')): void {
+    this.datePop.classList.toggle('open', open);
+    this.dateBtn.setAttribute('aria-expanded', String(open));
+    this.dateBtn.classList.toggle('active', open);
+    if (open) {
+      const p = this.localParts(this.app.time.now());
+      this.dateInput.value = p.date;
+      this.timeInput.value = p.time;
+      this.dateInput.focus();
+    }
+  }
+
+  get datePopOpen(): boolean {
+    return this.datePop.classList.contains('open');
   }
 
   /** Jump by the selected step (calendar-aware for months and years). */
@@ -174,7 +204,7 @@ export class TimeBar {
     this.rateEl.textContent = describeRate(t.rate);
     this.nowBtn.classList.toggle('live', t.isLive);
     const now = t.now();
-    if (document.activeElement !== this.dateInput && document.activeElement !== this.timeInput) {
+    if (!this.datePopOpen) {
       const p = this.localParts(now);
       this.dateInput.value = p.date;
       this.timeInput.value = p.time;

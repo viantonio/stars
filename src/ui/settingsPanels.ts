@@ -73,7 +73,8 @@ export function renderLayers(app: App): PanelView {
     h('div', { class: 'section-title' }, 'Sky & scenery'),
     toggles(app, [
       ['milkyWay', 'Milky Way', null, 'M'],
-      ['atmosphere', 'Atmosphere', 'sun', 'H'],
+      ['atmosphere', 'Atmosphere', 'atmosphere', 'H'],
+      ['showSun', 'The Sun', 'sun'],
       ['ground', 'Landscape', null, 'G'],
       ['cardinals', 'Compass points', 'compass'],
       ['perfectSky', 'Perfect sky', 'sparkles', 'P'],
@@ -115,10 +116,10 @@ export function renderSettings(app: App): PanelView {
     toggles(app, [
       ['refraction', 'Refraction', null],
       ['labelFaint', 'Label faint objects', null],
-      ['nightVision', 'Night vision', 'eye', 'R'],
+      ['nightVision', 'Red light', 'eye', 'R'],
       ['showHud', 'Show info chips', null],
     ]),
-    h('p', { class: 'note' }, 'Refraction lifts objects near the horizon by up to half a degree — the reason the Sun is still visible when it has geometrically set. Night vision turns everything red to protect your dark-adapted eyes when you are outside.'),
+    h('p', { class: 'note' }, 'Refraction lifts objects near the horizon by up to half a degree — the reason the Sun is still visible when it has geometrically set. Red light turns the whole screen red. Take your phone outside at night and your eyes stay dark-adapted (red light barely affects night vision), so you can still see the faint stars when you look up. For the pure starfield on screen, use Stargaze (the eye button, Q).'),
     h('div', { class: 'section-title' }, 'Data'),
     h('p', { class: 'note' }, 'Star positions: HYG v4.1 (Hipparcos, Yale BSC, Gliese). Planets & Moon: Astronomy Engine (VSOP87 / ELP). Comets: Minor Planet Center. Satellites: CelesTrak. Milky Way: NASA/GSFC Deep Star Maps 2020. Textures: NASA LRO, Solar System Scope (CC BY 4.0). Fresh comet orbits and satellite elements are downloaded automatically when online.'),
     h('div', { class: 'btn-row', style: 'margin-top:12px' }, h('button', { class: 'btn', onclick: () => (app.settings.reset(), app.panels.open('settings'), app.toasts.show('Settings reset')) }, 'Reset all settings')),

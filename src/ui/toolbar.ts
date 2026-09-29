@@ -24,7 +24,7 @@ export class Toolbar {
       panel('settings', 'settings', 'Settings', ''),
       h('div', { class: 'tool-sep' }),
       this.button('pointing', 'phone', 'Point at the sky', '', () => void app.pointing.toggle()),
-      this.button('night', 'eye', 'Night vision', 'R', () => app.settings.toggle('nightVision')),
+      this.button('night', 'eye', 'Stargaze — only the stars', 'Q', () => app.setStargaze(!app.settings.get().stargaze)),
       this.button('fullscreen', 'expand', 'Full screen', 'F', () => {
         if (document.fullscreenElement) void document.exitFullscreen();
         else void document.documentElement.requestFullscreen?.();
@@ -33,7 +33,7 @@ export class Toolbar {
     );
     app.root.append(bar);
     const sync = () => {
-      this.buttons.get('night')?.classList.toggle('active', app.settings.get().nightVision);
+      this.buttons.get('night')?.classList.toggle('active', app.settings.get().stargaze);
       for (const id of ['search', 'tonight', 'events', 'layers', 'location', 'settings', 'moments', 'asabove', 'learn'])
         this.buttons.get(id)?.classList.toggle('active', app.panels?.current === id);
       this.buttons.get('pointing')?.classList.toggle('active', app.pointing?.active ?? false);

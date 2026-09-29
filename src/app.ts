@@ -19,6 +19,8 @@ import { PanelHost, type PanelId } from './ui/panels';
 import { Toasts } from './ui/toast';
 import { showWelcome, showHelp } from './ui/modal';
 import { PointingMode } from './ui/pointing';
+import { LessonPlayer } from './learn/player';
+import { QuickToggles } from './ui/quickToggles';
 import { h } from './ui/dom';
 import { MomentStore, JournalStore, type Moment } from './esoteric/moments';
 import { MomentBanner } from './ui/momentBanner';
@@ -63,9 +65,14 @@ export class App {
     this.panels = new PanelHost(this);
     this.pointing = new PointingMode(this);
     this.momentBanner = new MomentBanner(this);
+    new QuickToggles(this);
+    root.append(h('button', { class: 'stargaze-exit', onclick: () => this.setStargaze(false) }, '✦ Stargazing · tap to return'));
+    document.body.classList.toggle('stargaze', this.settings.get().stargaze);
     root.append(h('div', { class: 'night-filter' }));
 
-    this.view.controls.onClick = (x, y) => this.select(this.view.pick(x, y));
+    this.view.controls.onClick = (x, y) => {
+      if (!this.settings.get().stargaze) this.select(this.view.pick(x, y));
+    };
     this.view.controls.onUserMove = () => this.info.onUserMove();
     let lastHover = 0;
     this.view.renderer.domElement.addEventListener('pointermove', (e) => {
@@ -327,10 +334,11 @@ export class App {
   private installShortcuts(): void {
     window.addEventListener('keydown', (e) => {
       const target = e.target as HTMLElement;
-      if (target.closest('input, textarea, select')) {
-        if (e.key === 'Escape') target.blur();
+      if (e.key === 'Escape') {
+        if (!document.querySelector('.modal-backdrop')) this.escape(target);
         return;
       }
+      if (target.closest('input, textarea, select')) return;
       // Dialogs handle their own keys; Space/Enter on a button must activate it.
       if (document.querySelector('.modal-backdrop')) return;
       if ((e.key === ' ' || e.key === 'Enter') && target.closest('button, [role="button"], a')) return;
@@ -400,6 +408,10 @@ export class App {
           break;
         case 'r':
           s.toggle('nightVision');
+          this.toasts.show(s.get().nightVision ? 'Red light on — protects your night vision outdoors' : 'Red light off');
+          break;
+        case 'q':
+          this.setStargaze(!s.get().stargaze);
           break;
         case 'p':
           s.toggle('perfectSky');
@@ -432,12 +444,31 @@ export class App {
         case 'O':
           this.toggleOrrery();
           break;
-        case 'Escape':
-          if (this.panels.current) this.panels.close();
-          else if (this.orrery?.visible) this.orrery.hide();
-          else this.select(null);
-          break;
       }
     });
+  }
+
+  /** Esc closes the innermost thing that is open, one layer per press. */
+  private escape(target: HTMLElement): void {
+    if (target.closest('input, textarea, select')) target.blur();
+    const lesson = LessonPlayer.for(this);
+    if (this.timebar.datePopOpen) this.timebar.toggleDatePop(false);
+    else if (this.panels.current) this.panels.close();
+    else if (this.info.isOpen) this.select(null);
+    else if (lesson.playing) lesson.stop(false);
+    else if (this.orrery?.visible) this.orrery.hide();
+    else if (this.settings.get().stargaze) this.setStargaze(false);
+    else if (this.pointing.active) void this.pointing.toggle();
+  }
+
+  /** Stargaze: hide every light and overlay so only the stars remain. */
+  setStargaze(on: boolean): void {
+    this.settings.set({ stargaze: on });
+    document.body.classList.toggle('stargaze', on);
+    if (on) {
+      this.panels.close();
+      this.select(null);
+      this.toasts.show('Stargazing — only the stars. Press Esc or tap ✦ to return.', 3500);
+    }
   }
 }

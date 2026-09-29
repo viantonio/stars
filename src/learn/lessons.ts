@@ -634,7 +634,7 @@ export const LESSONS: Lesson[] = [
         settings: { perfectSky: false, nightVision: true },
         text: [
           'Your pupils open in seconds, but the retina’s rod cells need 20–30 minutes of darkness to reach full sensitivity — **dark adaptation**. One glance at a white phone screen undoes much of it.',
-          'Night vision mode (R) turns this app red, which rods barely respond to. Outside, try **averted vision**: look slightly to one side of a faint object and it appears brighter, because the rods are concentrated away from the centre of your gaze.',
+          'Red light mode (R, in Settings) turns this app red, which rods barely respond to — use it when you take your phone outside. Outside, try **averted vision**: look slightly to one side of a faint object and it appears brighter, because the rods are concentrated away from the centre of your gaze.',
         ],
         reflection: 'Seeing in the dark cannot be hurried; the eye must first forget the glare. The contemplative traditions describe the same patience — the inner light becomes visible as the outer lights are dimmed, one by one.',
         action: async (ctx) => {

@@ -398,6 +398,7 @@ kbd {
 
 .timebar {
   position: absolute;
+  z-index: 22 !important;
   left: 50%;
   transform: translateX(-50%);
   bottom: calc(14px + var(--safe-bottom));
@@ -1882,4 +1883,207 @@ label.check input {
   border-color: rgba(181, 140, 255, 0.3);
   background: rgba(181, 140, 255, 0.1);
   cursor: pointer;
+}
+
+/* ------------------------------------------------------------ Time bar layout (fits every width) */
+
+.timebar-row {
+  min-width: 0;
+}
+
+.timebar-row > * {
+  flex-shrink: 0;
+}
+
+.tb-datepop {
+  position: absolute;
+  background: rgba(8, 11, 20, 0.97) !important;
+  right: 8px;
+  bottom: calc(100% + 8px);
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  min-width: 220px;
+  z-index: 2;
+}
+
+.tb-datepop.open {
+  display: flex;
+}
+
+.tb-datepop label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tb-datepop input {
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  padding: 0 8px;
+  font-size: 13.5px;
+  color-scheme: dark;
+}
+
+.tb-btn.active {
+  background: rgba(255, 207, 122, 0.14);
+  color: var(--gold);
+}
+
+@media (max-width: 760px) {
+  .tb-speed,
+  .tb-rate,
+  .tb-sep {
+    display: none;
+  }
+
+  .tb-btn {
+    min-width: 34px;
+    padding: 0 6px;
+  }
+
+  .tb-unit {
+    max-width: 118px;
+  }
+}
+
+/* ------------------------------------------------------------ Quick toggles */
+
+.quick-toggles {
+  position: absolute;
+  right: calc(14px + var(--safe-right));
+  bottom: calc(190px + var(--safe-bottom));
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 2px;
+  border-radius: 14px;
+}
+
+.qt {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+  transition: background 0.15s, color 0.15s;
+}
+
+.qt.on {
+  color: var(--gold);
+}
+
+.qt:hover {
+  background: var(--glass-hover);
+  color: var(--text);
+}
+
+.qt.on:hover {
+  color: var(--gold);
+}
+
+.qt .kbd-hint {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.qt .kbd-hint kbd {
+  margin-left: 6px;
+}
+
+@media (hover: hover) {
+  .qt:hover .kbd-hint {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .quick-toggles {
+    bottom: auto;
+    top: calc(96px + var(--safe-top));
+    right: calc(8px + var(--safe-right));
+  }
+
+  .qt {
+    width: 36px;
+    height: 36px;
+  }
+
+  .qt .kbd-hint {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ Stargaze: only the stars */
+
+.stargaze-exit {
+  display: none;
+}
+
+body.stargaze .hud,
+body.stargaze .toolbar,
+body.stargaze .timebar,
+body.stargaze .readout,
+body.stargaze .zoom-buttons,
+body.stargaze .quick-toggles,
+body.stargaze .info,
+body.stargaze .panel,
+body.stargaze .moment-banner {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.6s ease;
+}
+
+body.stargaze .stargaze-exit {
+  display: flex;
+  white-space: nowrap;
+  position: absolute;
+  top: calc(14px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 230, 180, 0.55);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: color 0.2s, background 0.2s;
+}
+
+body.stargaze .stargaze-exit:hover,
+body.stargaze .stargaze-exit:focus-visible {
+  color: var(--gold);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.card.is-me {
+  border-color: rgba(255, 207, 122, 0.45);
+  background: rgba(255, 207, 122, 0.07);
 }

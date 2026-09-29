@@ -498,7 +498,12 @@ export class BodyRenderer {
 
   setVisible(id: MajorBodyId, v: boolean): void {
     const bm = this.meshes.get(id);
-    if (bm) bm.group.visible = v;
+    if (bm && !v) bm.group.visible = false;
+  }
+
+  /** Hide the Sun's or Moon's glare for this frame (call after update). */
+  setGlowVisible(id: 'Sun' | 'Moon', v: boolean): void {
+    if (!v) (id === 'Sun' ? this.sunGlow : this.moonGlow).visible = false;
   }
 }
 

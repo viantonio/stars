@@ -32,6 +32,8 @@ export interface LandscapeUpdateParams {
   nightVision: boolean;
   /** 0..1 */
   lightPollution: number;
+  /** Switch off every artificial light (windows, street lamps, glow). */
+  lightsOff?: boolean;
 }
 
 export interface Landscape {
@@ -1798,6 +1800,7 @@ uniform float uTime;
 uniform float uHorizSun;
 uniform float uEmisGain;
 uniform float uNightF;
+uniform float uLightsOn;
 uniform float uHaze;
 varying vec3 vPos;
 #include <logdepthbuf_pars_fragment>
@@ -1925,7 +1928,7 @@ void main() {
     float h = lhash(floor(vec2(xv, yv) / 3.0) + (stripB ? 17.0 : 0.0));
     float tw = 1.0 + 0.1 * sin(uTime * (1.3 + 2.7 * h) + h * 40.0) + 0.05 * sin(uTime * 7.1 * (0.5 + h));
     float blink = hue < 0.15 ? (0.2 + 0.8 * smoothstep(0.35, 0.5, fract(uTime * 0.5 + h * 0.1)) * (1.0 - smoothstep(0.85, 1.0, fract(uTime * 0.5 + h * 0.1)))) : 1.0;
-    col += hueCol(hue) * emis * uEmisGain * uNightF * tw * blink * (1.0 - 0.5 * hz);
+    col += hueCol(hue) * emis * uEmisGain * uNightF * uLightsOn * tw * blink * (1.0 - 0.5 * hz);
   }
 
   if (uNV > 0.5) {
@@ -2036,6 +2039,7 @@ export function createLandscape(kind: HorizonKind, seed?: number): Landscape {
     uHorizSun: { value: 0 },
     uEmisGain: { value: cfg.emisGain },
     uNightF: { value: 0 },
+    uLightsOn: { value: 1 },
     uHaze: { value: cfg.haze ?? 1 },
   };
   const material = new THREE.ShaderMaterial({
@@ -2117,6 +2121,7 @@ export function createLandscape(kind: HorizonKind, seed?: number): Landscape {
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
       u.uTime.value = (now - t0) / 1000;
       u.uNightF.value = 1 - smooth(-9, -4, p.sunAltDeg);
+      u.uLightsOn.value = p.lightsOff ? 0 : 1;
       const sunAz = Math.atan2(p.sunDir.x, -p.sunDir.z) / D2R;
       u.uHorizSun.value = horizonAltAt(sunAz);
       glowUniforms.uGlow.value = u.uLP.value * 0.06 * (1 - smooth(-13, -3, p.sunAltDeg));

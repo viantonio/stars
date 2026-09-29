@@ -56,7 +56,7 @@ export function renderMoments(app: App): PanelView {
       body.append(
         h(
           'div',
-          { class: `card ${m.id === primary?.id ? 'location-card active' : ''}` },
+          { class: `card ${m.id === primary?.id ? 'is-me' : ''}` },
           h(
             'div',
             { class: 'obj-row' },

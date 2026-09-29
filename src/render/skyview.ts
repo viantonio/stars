@@ -389,7 +389,8 @@ export class SkyView {
 
   // ================================================================== frame
 
-  update(time: Date, site: SiteLocation, settings: Readonly<Settings>): FrameInfo {
+  update(time: Date, site: SiteLocation, userSettings: Readonly<Settings>): FrameInfo {
+    const settings = userSettings.stargaze ? stargazeSettings(userSettings) : userSettings;
     const now = performance.now();
     const dtMs = now - this.lastFrame;
     this.lastFrame = now;
@@ -535,6 +536,13 @@ export class SkyView {
       const px = BodyRenderer.pixelDiameter(s.angularRadius, fov, this.height, settings.bodyScale);
       this.bodyRenderer.setVisible(id, px > 2.5);
     }
+    // The Sun (and in Stargaze, the Moon) can be switched off entirely.
+    this.bodyRenderer.setVisible('Sun', settings.showSun);
+    this.bodyRenderer.setGlowVisible('Sun', settings.showSun);
+    if (settings.stargaze) {
+      this.bodyRenderer.setVisible('Moon', false);
+      this.bodyRenderer.setGlowVisible('Moon', false);
+    }
 
     // ---- Jupiter's Galilean moons when zoomed in.
     this.moonletPoints.begin();
@@ -576,12 +584,14 @@ export class SkyView {
       if (sky.lightPollution > sky.natural * 2) horizonCol.lerp(new THREE.Color(0.9, 0.7, 0.5).multiplyScalar(displayFromFlux(total * 3)), 0.5);
       this.landscape.update({
         sunDir: sunWorld,
-        sunAltDeg: sunAlt,
+        // With the Sun switched off the land lies in darkness too.
+        sunAltDeg: settings.showSun ? sunAlt : -40,
         moonDir: moonWorld,
-        moonIllum: moonAlt > 0 ? moon.phase : 0,
+        moonIllum: moonAlt > 0 && !settings.stargaze ? moon.phase : 0,
         skyColorHorizon: horizonCol,
         nightVision: settings.nightVision,
-        lightPollution: THREE.MathUtils.clamp((bortle - 1) / 8, 0, 1) * (settings.perfectSky ? 0.2 : 1),
+        lightsOff: settings.stargaze,
+        lightPollution: settings.stargaze ? 0 : THREE.MathUtils.clamp((bortle - 1) / 8, 0, 1) * (settings.perfectSky ? 0.2 : 1),
       });
     }
 
@@ -1101,4 +1111,36 @@ function dsoSymbol(type: string): 'circle' | 'dashed-circle' | 'ellipse' | 'squa
 export function shortCometName(name: string): string {
   // "C/2025 R2 (SWAN)" → "C/2025 R2 SWAN"; "12P/Pons-Brooks" stays.
   return name.replace(/\s*\(([^)]+)\)/, ' $1');
+}
+
+/**
+ * Stargaze: every source of light and every overlay removed — no sunlight,
+ * moonlight or city glow, no labels or lines — so only the stars remain,
+ * shining as they would from the darkest place on Earth.
+ */
+function stargazeSettings(s: Readonly<Settings>): Settings {
+  return {
+    ...s,
+    atmosphere: false,
+    perfectSky: true,
+    showSun: false,
+    milkyWay: true,
+    twinkle: true,
+    starBoost: Math.max(s.starBoost, 0.8),
+    constellationLines: false,
+    constellationNames: false,
+    constellationBounds: false,
+    starNames: false,
+    planetLabels: false,
+    deepSky: false,
+    cardinals: false,
+    zodiacBand: false,
+    trails: false,
+    gridAltAz: false,
+    gridEquatorial: false,
+    ecliptic: false,
+    meridian: false,
+    satellites: false,
+    nightVision: false,
+  };
 }

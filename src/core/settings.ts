@@ -22,7 +22,12 @@ export interface Settings {
   comets: boolean;
   asteroids: boolean;
   meteors: boolean;
+  /** Red light: keeps your eyes dark-adapted when using the app outdoors at night. */
   nightVision: boolean;
+  /** Stargaze: no light, no overlays — just the stars as they shine. */
+  stargaze: boolean;
+  /** Draw the Sun's disc and glare. */
+  showSun: boolean;
   /** Ignore light pollution and extinction: the sky as it would be with none. */
   perfectSky: boolean;
   /** null = use the site's Bortle class. */
@@ -72,6 +77,8 @@ export const DEFAULT_SETTINGS: Settings = {
   asteroids: true,
   meteors: true,
   nightVision: false,
+  stargaze: false,
+  showSun: true,
   perfectSky: false,
   bortleOverride: null,
   starBoost: 0,
