@@ -452,7 +452,8 @@ export class SkyView {
     const moonSunSep = sunWorld.angleTo(moonWorld) * RAD;
     const obscuration = discOverlap(sun.angularRadius, moon.angularRadius, moonSunSep);
     const sunFlux = sky.sunFlux * Math.max(1 - obscuration, 0.00002);
-    const total = sunFlux + sky.moonFlux + sky.lightPollution + sky.natural;
+    // Without an atmosphere nothing scatters: only the faint space background limits the stars.
+    const total = settings.atmosphere ? sunFlux + sky.moonFlux + sky.lightPollution + sky.natural : sky.natural;
     const zenithMag = 22 - 2.5 * Math.log10(total);
     const skyLimit = 7.93 - 5 * Math.log10(Math.pow(10, 4.316 - zenithMag / 5) + 1);
 
@@ -491,7 +492,7 @@ export class SkyView {
     // ---- Stars & point-like objects share uniforms.
     const su = this.stars.material.uniforms;
     su.uLimitMag.value = limitingMag;
-    su.uExtinction.value = settings.refraction || !settings.perfectSky ? sky.extinction : 0;
+    su.uExtinction.value = settings.atmosphere && !settings.perfectSky ? sky.extinction : 0;
     su.uTime.value = now / 1000;
     su.uTwinkle.value = settings.twinkle && settings.atmosphere && fov > 3 ? 1 : 0;
     su.uSize.value = settings.starSize;

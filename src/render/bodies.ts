@@ -444,7 +444,8 @@ export class BodyRenderer {
         // Bright against the night, washed out by day.
         u.uBrightness.value = THREE.MathUtils.lerp(2.3, 0.7, p.daylight);
         // Opaque against the Sun during a solar eclipse, translucent in daylight otherwise.
-        u.uOcclusion.value = p.eclipseObscuration > 0 ? 1 : THREE.MathUtils.lerp(1, 0.08, p.daylight);
+        // Opaque: the skylight is added in front afterwards (see Atmosphere).
+        u.uOcclusion.value = 1;
         u.uEarthshine.value = 0.035 * Math.pow(1 - s.phase, 2) * (1 - p.daylight);
         if (p.shadow) {
           u.uShadowDir.value.copy(p.shadow.dir);
@@ -456,7 +457,7 @@ export class BodyRenderer {
         }
       } else {
         u.uBrightness.value = THREE.MathUtils.lerp(1.6, 0.8, p.daylight);
-        u.uOcclusion.value = THREE.MathUtils.lerp(1, 0.2, p.daylight);
+        u.uOcclusion.value = 1;
       }
       if (bm.ring && bm.ringMaterial) {
         // Ring lighting in the planet-local frame.

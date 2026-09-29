@@ -321,10 +321,15 @@ export class Atmosphere {
       },
       side: THREE.BackSide,
       depthWrite: false,
-      depthTest: false,
+      // Drawn last and added on top: the lit air lies in front of the stars,
+      // the Moon and the planets (so a daytime Moon looks pale and its dark
+      // side shows sky), while the landscape's depth hides it below the horizon.
+      depthTest: true,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
     });
     this.mesh = new THREE.Mesh(new THREE.SphereGeometry(1500, 96, 64), this.material);
-    this.mesh.renderOrder = -100;
+    this.mesh.renderOrder = 50;
     this.mesh.frustumCulled = false;
   }
 

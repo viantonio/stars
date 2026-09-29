@@ -163,7 +163,10 @@ export class LessonPlayer {
     this.position();
 
     this.renderStep(step, i);
-    const ctx = (this.ctx = new LessonContext(app));
+    const ctx = (this.ctx = new LessonContext(app, (patch) => {
+      for (const k of Object.keys(patch) as (keyof Settings)[]) this.touched.add(k);
+      app.settings.set(patch);
+    }));
     ctx.mark(null);
     app.view.setSelectionPath(null);
     app.track(null);

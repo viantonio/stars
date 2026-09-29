@@ -3,6 +3,7 @@ import * as A from 'astronomy-engine';
 import type { App } from '../app';
 import type { SkyObject } from '../core/objects';
 import type { MajorBodyId } from '../astro/solarsystem';
+import type { Settings } from '../core/settings';
 import { altAzToWorld, worldToAltAz, raDecToVec } from '../astro/frames';
 
 /** Wall-clock parts of an instant in an IANA time zone. */
@@ -43,7 +44,11 @@ export class LessonContext {
   private cleanups: (() => void)[] = [];
   private dead = false;
 
-  constructor(readonly app: App) {}
+  /** `setSettings` lets the player remember which settings a step changed, to restore them later. */
+  constructor(
+    readonly app: App,
+    private readonly setSettings: (patch: Partial<Settings>) => void = (p) => app.settings.set(p),
+  ) {}
 
   get cancelled(): boolean {
     return this.dead;
@@ -119,6 +124,11 @@ export class LessonContext {
       };
       requestAnimationFrame(tick);
     });
+  }
+
+  /** Changes settings for this step; the player restores them when the lesson ends. */
+  set(patch: Partial<Settings>): void {
+    if (!this.dead) this.setSettings(patch);
   }
 
   /** Pauses (or runs) the clock without changing the time. */
@@ -279,9 +289,11 @@ export class LessonContext {
 function liftFraction(): number {
   const card = document.querySelector('.learn-card');
   if (!card || card.classList.contains('minimised')) return 0.05;
-  if (!window.matchMedia('(max-width: 760px)').matches) return 0.16;
-  const covered = card.getBoundingClientRect().height / window.innerHeight;
-  return Math.min(0.3, Math.max(0.1, covered / 2));
+  // Aim for the middle of the sky above the card (a little lower on wide screens,
+  // where the sky beside the card is visible too).
+  const mobile = window.matchMedia('(max-width: 760px)').matches;
+  const top = card.getBoundingClientRect().top / window.innerHeight;
+  return Math.min(0.3, Math.max(0.1, (0.5 - top / 2) * (mobile ? 1 : 0.8)));
 }
 
 function slerpPoints(a: THREE.Vector3, b: THREE.Vector3, n: number, skipFirst: boolean): THREE.Vector3[] {

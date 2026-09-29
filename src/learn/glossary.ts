@@ -116,8 +116,9 @@ export function termButton(label: string, t: GlossaryTerm): HTMLElement {
   const btn = h('button', { type: 'button', class: 'gloss-term', 'aria-describedby': id, 'aria-expanded': 'false' }, label);
   const def = h('span', { id, class: 'sr-only' }, `${t.term}: ${t.def}`);
   const wrap = h('span', { class: 'gloss-wrap' }, btn, def);
-  btn.addEventListener('mouseenter', () => showPop(btn, t));
-  btn.addEventListener('mouseleave', () => hidePopSoon());
+  // Hover only for real mice: touch taps are handled by focus/click.
+  btn.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && showPop(btn, t));
+  btn.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && hidePopSoon());
   btn.addEventListener('focus', () => showPop(btn, t));
   btn.addEventListener('blur', () => hidePop());
   btn.addEventListener('click', (e) => {
@@ -146,8 +147,8 @@ function popEl(): HTMLElement {
   if (pop) return pop;
   // Lives on <body>: a backdrop-filter ancestor would trap position:fixed.
   pop = h('div', { class: 'gloss-pop', 'aria-hidden': 'true' });
-  pop.addEventListener('mouseenter', () => window.clearTimeout(hideTimer));
-  pop.addEventListener('mouseleave', () => hidePopSoon());
+  pop.addEventListener('pointerenter', () => window.clearTimeout(hideTimer));
+  pop.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && hidePopSoon());
   document.body.append(pop);
   document.addEventListener('pointerdown', (e) => {
     if (current && !(e.target as HTMLElement).closest('.gloss-term, .gloss-pop')) hidePop();

@@ -136,7 +136,7 @@ export const LESSONS: Lesson[] = [
           'Look around: the sky behaves like a great dome — the **celestial sphere** — with you at its exact centre. The stars really lie at hugely different distances, but for finding your way the dome is a perfect map.',
           'The ground hides the lower half of that sphere. The line where sky meets land is your **horizon**, and the letters N, E, S and W along it mark the compass points.',
         ],
-        reflection: 'An old Hermetic saying calls the divine “a sphere whose centre is everywhere and whose circumference is nowhere.” Every observer stands at the centre of their own sky.',
+        reflection: 'A saying attributed to Hermes Trismegistus calls the divine “a sphere whose centre is everywhere and whose circumference is nowhere.” Every observer stands at the centre of their own sky.',
         action: async (ctx) => {
           await ctx.setTime(ctx.tonight(22));
           ctx.look(16, 180, 95);
@@ -320,7 +320,7 @@ export const LESSONS: Lesson[] = [
         settings: { atmosphere: true },
         spotlight: '.timebar',
         text: [
-          'The time bar is your time machine. ▶ plays and pauses; the arrows run time faster, slower or backwards (keys [ and ]); the step buttons jump by an hour, a day, a sidereal day, a lunar month or more. The Now button (N) always brings you home.',
+          'The time bar is your time machine. ▶ plays and pauses; the double arrows run time faster, slower or backwards (keys [ and ]); the step buttons on the left jump by the amount chosen between them — an hour, a day, a sidereal day, a lunar month or more. The Now button (N) always brings you home.',
           'Try stepping by one sidereal day: the stars stay put while the Moon and planets move.',
         ],
         action: async (ctx) => {
@@ -387,7 +387,7 @@ export const LESSONS: Lesson[] = [
           'Why the slip? Earth’s axis wobbles like a spinning top, tracing a circle every ~25,800 years. This **precession** slides the equinox points backwards along the zodiac by 1° every 72 years.',
           'It also moves the pole. Polaris is the pole star only for now: when the pyramids were built the pole lay near Thuban in Draco, and around the year 14,000 bright Vega will be close to it. The blue grid shows today’s celestial equator and pole.',
         ],
-        reflection: 'Plato called the full cycle the Great Year. Even the “fixed” stars are in motion — the heavens keep a patience measured in millennia.',
+        reflection: 'Tradition calls this cycle the Great Year, or Platonic Year. Even the “fixed” stars are in motion — the heavens keep a patience measured in millennia.',
         action: async (ctx) => {
           await ctx.setTime(ctx.tonight(22));
           const p = ctx.star('Polaris');
@@ -424,13 +424,13 @@ export const LESSONS: Lesson[] = [
         settings: { atmosphere: true, ground: true, planetLabels: true },
         text: [
           'The Moon makes no light of its own. The Sun always lights exactly half of it; the **phases** are simply how much of that sunlit half faces us as the Moon circles Earth.',
-          'Here is the evening sky three days after new Moon: a thin crescent low in the west after sunset, its lit side pointing down toward the Sun that has just set.',
+          'Here is the evening sky four days after new Moon: a crescent low in the west after sunset, its lit side facing down toward the Sun that has just set.',
         ],
         action: async (ctx) => {
           const nm = nextNewMoon();
-          const day = new Date(nm.getTime() + 3 * 86400e3);
-          await ctx.setTime(sunsetOn(ctx.app, day).getTime() + 40 * 60e3);
-          ctx.flyTo(ctx.body('Moon'), 14, { mark: false });
+          const day = new Date(nm.getTime() + 4 * 86400e3);
+          await ctx.setTime(sunsetOn(ctx.app, day).getTime() + 60 * 60e3);
+          ctx.flyTo(ctx.body('Moon'), 5, { mark: false });
         },
       },
       {
@@ -471,17 +471,19 @@ export const LESSONS: Lesson[] = [
         },
       },
       {
-        title: 'A month in half a minute',
-        settings: { atmosphere: false, ground: false },
+        title: 'A month in a few seconds',
+        settings: { atmosphere: false },
         text: [
-          'Now the camera is locked on the Moon (ground and air removed) while four hours pass every tick. Watch the phases roll by — and notice the craters and dark “seas” always face us.',
+          'Now the camera is locked on the Moon (daylight removed) and each tick jumps one day — 24 h 50 min, the time the Moon takes to come back to the same place in our sky. Watch the phases roll by — and notice the craters and dark “seas” always face us.',
           'That is **tidal locking**: Earth’s tides long ago slowed the Moon’s spin until it turned exactly once per orbit. The slight rocking you may notice is **libration**, which over a month lets us peek at about 59% of the surface.',
         ],
         action: async (ctx) => {
           const nm = nextNewMoon();
-          const start = nm.getTime() + 1.5 * 86400e3;
-          await animate(ctx, start, start + 28 * 86400e3, 4 * 3600e3, 150, 1500);
-          ctx.flyTo(ctx.body('Moon'), 1.3, { mark: false });
+          // Start at the Moon's transit (highest point) and step by a mean lunar day, so it stays up.
+          const transit = A.SearchHourAngle(A.Body.Moon, observer(ctx.app), 0, new Date(nm.getTime() + 1.5 * 86400e3)).time.date.getTime();
+          const lunarDay = 89428e3;
+          await animate(ctx, transit, transit + 25 * lunarDay, lunarDay, 380, 1800);
+          ctx.flyTo(ctx.body('Moon'), 1.3, { mark: false, lift: 0.25 });
           ctx.track(ctx.body('Moon'));
         },
       },
@@ -691,7 +693,7 @@ export const LESSONS: Lesson[] = [
         title: 'Magnitude: a backwards scale',
         text: (app) => [
           'Astronomers measure brightness in **magnitudes**, an ancient scale that runs backwards: smaller numbers are brighter. Each step is 2.5× brighter, and five steps are exactly 100×. Vega was long the zero point; the faintest stars you can see are around 6.',
-          `Sirius, below Orion, is the brightest star in the night sky at magnitude −1.5, and one of the nearest: ${lightLeft(app, 'Sirius', 8.6)}.`,
+          `Sirius, down and to the left of Orion, is the brightest star in the night sky at magnitude −1.5, and one of the nearest: ${lightLeft(app, 'Sirius', 8.6)}.`,
         ],
         action: async (ctx) => {
           await ctx.setTime(WINTER_NIGHT(ctx));
@@ -866,7 +868,7 @@ export const LESSONS: Lesson[] = [
         spotlight: '.timebar',
         text: [
           'Everything in this sky is computed for one moment, shown top-left. The time bar lets you change it: play, pause or reverse; run faster; step by an hour, a day, a lunar month or a year; or, on a larger screen, type a date and time.',
-          'The coloured strip is the day at a glance — blue daylight, orange and violet twilight, dark night. Drag along it to scrub through the hours. Now (N) returns to the live sky.',
+          'The coloured strip is the day at a glance — blue daylight, orange and violet twilight, dark night. Drag along it to scrub through the hours, or hold and pull the dial above it to spin time faster the further you pull. Now (N) returns to the live sky.',
         ],
         action: async (ctx) => {
           await ctx.setTime(ctx.tonight(22));
@@ -918,7 +920,7 @@ export const LESSONS: Lesson[] = [
         settings: { atmosphere: true, ground: true, constellationLines: true, constellationNames: false, starNames: true },
         text: [
           'A May evening, facing north and looking high. The seven bright stars of the Big Dipper (the Plough in Britain) form a ladle: four in the bowl, three in the handle.',
-          'It is an **asterism**, the brightest part of the constellation Ursa Major, the Great Bear. From Mariposa it is **circumpolar** — it never sets — and in spring evenings it rides high overhead.',
+          'It is an **asterism**, the brightest part of the constellation Ursa Major, the Great Bear. From Mariposa it is almost **circumpolar**: only Alkaid, at the tip of the handle, ever dips below the horizon. In spring evenings it rides high overhead.',
         ],
         action: async (ctx) => {
           await ctx.setTime(SPRING_NIGHT(ctx));
@@ -974,7 +976,7 @@ export const LESSONS: Lesson[] = [
       {
         title: 'Keep hopping',
         text: [
-          'One more: a line from Megrez through Phecda, the two bowl stars nearest the handle, leads down (“a hole in the bowl drips onto Leo”) to Regulus, the heart of the Lion.',
+          'One more: a line from Megrez through Phecda, the two bowl stars nearest the handle, leads down (“a hole in the bowl will leak on Leo”) to Regulus, the heart of the Lion.',
           'Outside, the same patterns are there — just smaller and fainter than on screen. Try it tonight: find the Dipper, then Polaris. You will never lose north again.',
         ],
         action: async (ctx) => {
